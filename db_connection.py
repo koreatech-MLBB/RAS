@@ -1,7 +1,7 @@
 import pymysql as sql
 
 
-class Error(Exception):
+class Error(BaseException):
     def __init__(self, message="", hint=""):
         """
         :param message:
@@ -18,8 +18,6 @@ class Error(Exception):
         return "Error message: " + self.message + "\n" + \
             "Hint: " + self.hint
 
-
-# TODO: shared_memory 없애기
 
 class DBConnection:
     def __init__(self, user: str, password: str, database: str):
