@@ -1,5 +1,10 @@
-from django.http import HttpResponse, JsonResponse
+import json
+
+from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import *
 
@@ -7,33 +12,56 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+        fields = ['id', 'username', 'password']
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
         fields = '__all__'
+
 # Create your views here.
 
 
-def index(request):
-    return HttpResponse("ras_db index")
+class SignUp(APIView):
+    def post(self, request):
+        data = json.loads(request.body.decode('utf-8'))
+        try:
+            id_ = User.objects.get(username=data['user_id'])
+        except:
+            id_ = None
+
+        if id_ is not None:
+            return Response({"result": False, "Error": "이미 존재하는 아이디 입니다."})
+        else:
+            new_user = User.objects.create_user(
+                username=data['user_id'],
+                password=data['password'],
+            )
+
+            new_profile = Profile(
+                id=new_user,
+                name=data['name'],
+                age=data['age'],
+                weight=data['weight'],
+                height=data['height'],
+                gender=data['gender']
+            )
+
+            new_user.save()
+            new_profile.save()
+
+            token = Token.objects.create(user=new_user)
+        return Response({"result": True})
 
 
-def get_users(request):
-    if request.method == 'GET':
-        results = UserSerializer(User.objects.all(), many=True).data
-        return JsonResponse(results, safe=False)
+class SignIn(APIView):
+    def post(self, request):
+        data = json.loads(request.body.decode('utf-8'))
+        user = authenticate(username=data['user_id'], password=data['password'])
+        if user is not None:
+            token = Token.objects.get(user=user)
+            return Response({"result": True, "Token": token.key})
+        else:
+            return Response({"result": False})
 
-
-def signin(request):
-    if request.method == 'POST':
-        data = request.POST
-        User.objects.create(
-            user_id=data['user_id'],
-            username=data['username'],
-            password=data['password'],
-            name=data['name'],
-            age=data['age'],
-            weight=data['weight'],
-            height=data['height'],
-            gender=data['gender']
-        )
-        return JsonResponse({"result": True})
-    else:
-        return JsonResponse({"result": "이런 요청 안받습니다."})

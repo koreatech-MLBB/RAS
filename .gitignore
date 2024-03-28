@@ -165,8 +165,8 @@ cython_debug/
 *.log
 *.pot
 *.pyc
-./ras_db/local_settings.py
-./ras_db/db.sqlite3
-./ras_db/db.sqlite3-journal
+ras/ras_db/local_settings.py
+ras/ras_db/db.sqlite3
+ras/ras_db/db.sqlite3-journal
 media
-
+ras/ras_db/migrations/

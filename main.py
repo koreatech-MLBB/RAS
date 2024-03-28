@@ -4,7 +4,7 @@ import os
 
 
 def run_db_server():
-    os.system("python ./ras/manage.py runserver 0.0.0.0:8000")
+    os.system("python ./ras/manage.py runserver 0.0.0.0:8080")
 
 
 def run_test():
