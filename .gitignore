@@ -160,3 +160,13 @@ cython_debug/
 .idea/
 
 *.sql
+
+### Django ###
+*.log
+*.pot
+*.pyc
+./ras_db/local_settings.py
+./ras_db/db.sqlite3
+./ras_db/db.sqlite3-journal
+media
+

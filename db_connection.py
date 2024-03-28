@@ -56,7 +56,7 @@ class DBConnection:
     def select(self, table: str, condition=None, order=None) -> tuple:
         """
         select(table='test')\n
-        select(table='test', order={'id1': 1})\n
+        select(table='test', order=[('id1', '=', 2)])\n
         select(table='test', condition=["id1", "id2"])\n
         select(table='test', condition=["id1"], order=[('id1', '=', 2)]\n
         :param table:
@@ -66,7 +66,7 @@ class DBConnection:
         :raises Error: pymysql exceptions
         """
         if order is None:
-            order = [()]
+            order = []
         if condition is None:
             condition = []
         cursor = self.conn.cursor()
@@ -253,3 +253,34 @@ class DBConnection:
                 self.conn.rollback()
                 raise Error(e.__str__(), "update error")
             return True
+
+    def get_tables(self) -> list:
+        """
+        :return: [name1, name2, name3, ...]
+        """
+        cursor = self.conn.cursor()
+        cursor.execute("show tables")
+        res_buf = cursor.fetchall()
+        res = []
+        for names in res_buf:
+            for name in names:
+                res.append(name)
+        self.conn.commit()
+        return res
+
+    def get_columns(self, table=None) -> dict:
+        """
+        :param table:
+        :return: {name: (Type, Null, Key, Default, Extra), ...}
+        """
+        if table is None or table not in self.get_tables():
+            raise Error(message=f"there is no {table}", hint=f"{table}")
+
+        cursor = self.conn.cursor()
+        cursor.execute(f"show columns from {table}")
+        res_buf = cursor.fetchall()
+        res = {}
+        for buf in res_buf:
+            res[buf[0]] = buf[1:]
+        self.conn.commit()
+        return res
