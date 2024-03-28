@@ -6,4 +6,3 @@ urlpatterns = [
     path('', views.index),
     path('hello', views.hello)
 ]
-g
