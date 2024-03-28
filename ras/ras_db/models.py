@@ -20,12 +20,13 @@ class Pose(models.Model):
 
 
 class Running(models.Model):
-    running_id = models.IntegerField(primary_key=True)
-    user = models.OneToOneField(User, models.CASCADE)
+    running_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, models.CASCADE)
     running_date = models.DateField()
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    average_speed = models.FloatField()
+    heart_rate = models.IntegerField()
+    steps = models.IntegerField()
 
     class Meta:
         managed = True
