@@ -44,7 +44,7 @@ class SignUpView(APIView):
             id_ = None
 
         if id_ is not None:
-            return Response({"result": False, "Error": "이미 존재하는 아이디 입니다."})
+            return Response({"result": False, "Error": "이미 존재 하는 아이디 입니다."})
         else:
             new_user = User.objects.create_user(
                 username=data['user_id'],
@@ -63,7 +63,8 @@ class SignUpView(APIView):
             new_user.save()
             new_profile.save()
 
-            token = Token.objects.create(user=new_user)
+            Token.objects.create(user=new_user)
+
         return Response({"result": True})
 
 
@@ -76,6 +77,7 @@ class SignInView(APIView):
             return Response({"result": True, "Token": token.key})
         else:
             return Response({"result": False})
+
 
 class RunningView(APIView):
     def post(self, request, user_id):
@@ -94,9 +96,9 @@ class RunningView(APIView):
                     new_state.save()
                     return Response({"result": True, "state": True})
             else:
-                return Response({"result": True, "error": "인증되지 않은 토큰 입니다."})
+                return Response({"result": True, "error": "인증 되지 않은 토큰 입니다."})
         else:
-            return Response({"result": False, "error": "존재하지 않는 사용자 입니다."})
+            return Response({"result": False, "error": "존재 하지 않는 사용자 입니다."})
 
     def get(self, request, user_id):
         user_ = User.objects.get(username=user_id)
@@ -106,11 +108,12 @@ class RunningView(APIView):
                     runnings = Running.objects.filter(user=user_).values('running_id', 'running_date')
                     return Response({"result": True, "runnings": runnings})
                 else:
-                    return Response({"result": False, "error": "인증되지 않은 토큰 입니다."})
+                    return Response({"result": False, "error": "인증 되지 않은 토큰 입니다."})
             else:
                 return Response({"result": False, "error": "토큰이 없습니다."})
         else:
-            return Response({"result": False, "error": "존재하지 않는 사용자 입니다."})
+            return Response({"result": False, "error": "존재 하지 않는 사용자 입니다."})
+
 
 class RunningSaveView(APIView):
     def post(self, request, user_id):
@@ -131,9 +134,9 @@ class RunningSaveView(APIView):
                 new_running.save()
                 return Response({"result": True})
             else:
-                return Response({"result": False, "error": "인증되지 않은 토큰 입니다."})
+                return Response({"result": False, "error": "인증 되지 않은 토큰 입니다."})
         else:
-            return Response({"result": False, "error": "존재하지 않는 사용자 입니다."})
+            return Response({"result": False, "error": "존재 하지 않는 사용자 입니다."})
 
 
 class RunningInfoView(APIView):
@@ -145,6 +148,6 @@ class RunningInfoView(APIView):
                 running_info = RunningInfoSerializer(running_info).data
                 return Response({"result": True, "running_info": running_info})
             else:
-                return Response({"result": False, "error": "인증되지 않은 토큰 입니다."})
+                return Response({"result": False, "error": "인증 되지 않은 토큰 입니다."})
         else:
-            return Response({"result": False, "error": "존재하지 않는 사용자 입니다."})
+            return Response({"result": False, "error": "존재 하지 않는 사용자 입니다."})
