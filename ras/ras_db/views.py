@@ -1,6 +1,13 @@
 import json
+from multiprocessing import shared_memory
 
+import random
+
+import cv2
+import numpy as np
 from django.contrib.auth import authenticate
+from django.http import StreamingHttpResponse, JsonResponse
+from django.shortcuts import render
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -92,7 +99,7 @@ class RunningView(APIView):
                     state.delete()
                     return Response({"result": True, "state": False})
                 else:
-                    new_state = RunningState(user=user_, state=True)
+                    new_state = RunningState(user=user_, username=user_id, state=True)
                     new_state.save()
                     return Response({"result": True, "state": True})
             else:
@@ -151,3 +158,65 @@ class RunningInfoView(APIView):
                 return Response({"result": False, "error": "인증 되지 않은 토큰 입니다."})
         else:
             return Response({"result": False, "error": "존재 하지 않는 사용자 입니다."})
+
+def video_stream(user_id):
+
+
+    while True:
+        # 공유 메모리 열기
+        try:
+            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}")
+        except:
+            break
+
+        # 공유 메모리에서 데이터를 NumPy 배열로 읽기
+        shm_array = np.ndarray((480, 640, 3), dtype=np.uint8, buffer=my_shm.buf)
+
+        # NumPy 배열을 이미지로 변환
+        image = np.reshape(shm_array, (480, 640, 3))  # 예시 이미지 크기 (높이, 너비, 채널)
+
+        # JPEG 인코딩
+        success, jpeg = cv2.imencode(".jpg", image)
+
+        # 공유 메모리 닫기
+        my_shm.close()
+        if not success:
+            break
+
+        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+        # time.sleep(0.05)  # 0.1초 대기
+
+def audio_view(request):
+    return render(request, 'app1/audio_template.html')
+
+def get_next_audio(request):
+    # 오디오 파일 목록
+    audio_files = [
+        'audio/audio1.mp3',
+        'audio/audio2.mp3',
+        'audio/audio3.mp3',
+        'None'
+    ]
+    # 랜덤하게 오디오 파일 선택
+    next_audio = random.choice(audio_files)
+    return JsonResponse({'next_audio': next_audio})
+
+class AudioStreamingView(APIView):
+    def get(self, request, user_id):
+        return render(request, 'audio_streaming.html')
+        # return StreamingHttpResponse(audio_stream(user_id)(), content_type="audio/mpeg")
+
+class StreamingView(APIView):
+    def get(self, request, user_id):
+        return StreamingHttpResponse(video_stream(user_id), content_type="multipart/x-mixed-replace; boundary=frame")
+
+
+class StreamingRunning(APIView):
+    def get(self, request, user_id):
+        # 원하는 컨텍스트 데이터 설정
+        context = {
+            'user_id': user_id,
+            # 다른 필요한 컨텍스트 데이터 추가 가능
+        }
+        # 템플릿을 렌더링하여 HTML 생성
+        return render(request, 'streaming.html', context)

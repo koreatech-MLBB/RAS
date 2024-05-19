@@ -1,5 +1,7 @@
-from django.contrib import admin
 from django.urls import path
+from django.conf.urls.static import static
+from django.conf import settings
+
 from . import views
 
 urlpatterns = [
@@ -7,5 +9,9 @@ urlpatterns = [
     path('sign/in', views.SignInView.as_view()),
     path('<str:user_id>/running', views.RunningView.as_view()),
     path('<str:user_id>/running/info', views.RunningSaveView.as_view()),
-    path('<str:user_id>/running/info/<int:running_id>', views.RunningInfoView.as_view())
-]
+    path('<str:user_id>/running/info/<int:running_id>', views.RunningInfoView.as_view()),
+    path('imgstreaming/<str:user_id>', views.StreamingView.as_view()),
+    path('audiostreaming/<str:user_id>', views.AudioStreamingView.as_view()),
+    path('streaming/<str:user_id>', views.StreamingRunning.as_view()),
+    path('get_next_audio/', views.get_next_audio, name='get_next_audio')
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
