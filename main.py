@@ -1,54 +1,77 @@
 import os
 os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANFORMS"] = "0"
 
+import sys
+openpose_dir = "D:\RAS\openpose\Release"
+model_dir = "D:\RAS\models"
+sys.path.append(openpose_dir)
+
+try:
+    import pyopenpose as op
+except ImportError as e:
+    print(e)
+    raise e
+
+pose_path = "D:\\RAS\\openpose\\Release"
+model_path = "D:\\RAS\\models"
+
 from multiprocessing import Process, Pipe, shared_memory
 import cv2
 
-import numpy as np
 from pymysqlreplication import BinLogStreamReader
 from pymysqlreplication.event import RotateEvent
 from pymysqlreplication.row_event import WriteRowsEvent, DeleteRowsEvent
 
 from scipy.signal import find_peaks
 
+from pose_functions import *
+
 
 def run_api_server():
     try:
         os.system("python ./ras/manage.py runserver 0.0.0.0:8080")
-    except KeyboardInterrupt as e:
+    except BaseException as e:
         print(f"run_api_server.except: {e.__str__()}")
         print("run_api_server terminated")
 
 
-def pose_scoring(pose: dict):
-    # find cycle
-    hip_position = -1 * np.array([pose['LEFT_HIP']])
-    peak, _ = find_peaks(hip_position)
-
-    # peak값이 두개가 아니다 -> 아직 한 주기가 나타나지 않았다라고 판단
-    # None을 return하여 주기가 없음을 전달
-    if len(peak) != 2:
-        return False, (None, None)
-
-    cycle_score = 0
-    cycle_idx = {'start': 0, 'end': peak[-1]}
-    print(hip_position[cycle_idx[0]:cycle_idx[1] + 1])
-    hip_position = np.array(hip_position[cycle_idx[1] + 1:])
-    print(len(hip_position))
-
-    # cycle_idx에 해당하는 점수 계산
-
-    return True, cycle_idx, cycle_score
-
-
-def best_pose(start_idx, end_idx):
-    return start_idx, end_idx
-
-
 def running_process(my_name, read_handle):
-    new_shm = shared_memory.SharedMemory(name=my_name, create=True, size=480 * 680 * 3)
+
+    # cap = cv2.VideoCapture("./examples/run_example_4.mp4")
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    data = b""
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    while True:
+        ret, test_frame = cap.read()
+        if ret:
+            break
+    print(test_frame.shape)
+    buf1 = shared_memory.SharedMemory(name=f"{my_name}_frame",
+                                   create=True,
+                                   size=test_frame.shape[0] * test_frame.shape[1] * test_frame.shape[2])
+    # print(_.name)
+    b = np.array(["a" * 40], dtype=np.dtype('U40'))
+    buf2 = shared_memory.SharedMemory(name=f"{my_name}_feedback",
+                                   create=True,
+                                   size=b.nbytes)
+    # print(_.name)
+    op_wrapper = op.WrapperPython()
+    op_wrapper.configure({"model_folder": model_dir})
+    op_wrapper.start()
+
+    body_coordinates = dict()
+    body = {"Nose": (0,), "Neck": (1,), "Mid-hip": (8,),
+            "Eye": (15, 16), "Ear": (17, 18), "Shoulder": (2, 5), "Elbow": (3, 6), "Wrist": (4, 7),
+            "Hip": (9, 12), "Knee": (10, 13), "Ankle": (11, 14), "Big-toe": (22, 19)}
+
+    for key, values in body.items():
+        if len(values) == 1:
+            body_coordinates[key] = [[]]
+        else:
+            body_coordinates[key] = [[], []]
+
+    frames = [0 for _ in range(100)]
+    frames.clear()
 
     while True:
         if read_handle.poll(timeout=0.01):
@@ -57,16 +80,148 @@ def running_process(my_name, read_handle):
                 cap.release()
                 print(f"kill this({my_name}) process")
                 break
+        # cam에서 frame정보 읽어오기
         ret, frame = cap.read()
-        my_shm = shared_memory.SharedMemory(name=my_name)
-        frame = np.array(frame)
-        my_shm_buf = np.ndarray((480, 640, 3), dtype=np.uint8, buffer=my_shm.buf)
-        np.copyto(my_shm_buf, frame)
-        my_shm.close()
-        # 여기에 frame으로 작업 처리하는 코드 작성
-        # if ret:
-        # cv2.imwrite(output_path, frame)
-        # time.sleep(1)
+
+        if not ret:
+            continue
+        try:
+            datum = op.Datum()
+            imageToProcess = frame
+            datum.cvInputData = imageToProcess
+            op_wrapper.emplaceAndPop(op.VectorDatum([datum]))
+
+            # shared_memory 저장 부분
+            my_frame = shared_memory.SharedMemory(name=f"{my_name}_frame")
+            frame = np.array(datum.cvOutputData)
+            my_frame_buf = np.ndarray(frame.shape, dtype=np.uint8, buffer=my_frame.buf)
+            np.copyto(my_frame_buf, frame)
+            my_frame.close()
+
+            for k, idx in body.items():
+                for i in range(len(idx)):
+                    body_coordinates[k][i].append(tuple(datum.poseKeypoints[0][idx[i]][:2]))
+
+            frames.append(datum.cvOutputData)
+
+            nose_position = -1 * np.array([y for _, y in body_coordinates['Neck'][0]])
+            peaks, _ = find_peaks(nose_position)
+            if len(peaks) == 2:
+                target = 1 if body_coordinates['Ankle'][0][0] > body_coordinates['Ankle'][1][0] else 0
+
+                knee_function = lambda x: (
+                        (1.3148 * (0.1 ** 8)) * (x ** 5)
+                        - (3.3236 * (0.1 ** 6)) * (x ** 4)
+                        + 0.0002891 * (x ** 3)
+                        - 0.010055 * (x ** 2)
+                        + 0.12522 * x
+                )
+
+                hip_function = lambda x: (
+                        (-4.1847 * (0.1 ** 14)) * (x ** 8)
+                        + (1.6414 * (0.1 ** 11)) * (x ** 7)
+                        - (2.484 * (0.1 ** 9)) * (x ** 6)
+                        + (1.8194 * (0.1 ** 7)) * (x ** 5)
+                        - (6.8429 * (0.1 ** 6)) * (x ** 4)
+                        + 0.0001503 * (x ** 3)
+                        - 0.0024657 * (x ** 2)
+                        + 0.0020494 * x
+                        + 0.91
+                )
+
+                ankle_function = lambda x: (
+                        1.8553 * (0.1 ** 14) * (x ** 8)
+                        - 1.4506 * (0.1 ** 11) * (x ** 7)
+                        + 3.916 * (0.1 ** 9) * (x ** 6)
+                        - 5.0626 * (0.1 ** 7) * (x ** 5)
+                        + 3.4058 * (0.1 ** 5) * (x ** 4)
+                        - 0.0011533 * (x ** 3)
+                        + 0.016508 * (x ** 2)
+                        - 0.059354 * x
+                        + 0.68168
+                )
+
+                knee_angles = []
+                hip_angles = []
+                ankle_angles = []
+                gaze_scores = []
+                upper_body_scores = []
+
+                elbow_scores = elbow_angle_calc_scores(shoulder=body_coordinates['Shoulder'],
+                                                       elbow=body_coordinates['Elbow'],
+                                                       wrist=body_coordinates['Wrist'],
+                                                       length=peaks[-1] + 1)
+
+                for i in range(peaks[-1] + 1):
+                    # 무릎 각도
+                    knee_angle = calculate_angle(a=body_coordinates['Hip'][target][i],
+                                                 b=body_coordinates['Knee'][target][i],
+                                                 c=body_coordinates['Ankle'][target][i])
+                    knee_angles.append(180 - knee_angle)
+
+                    # 골반 각도
+                    hip_angle = calculate_angle(a=body_coordinates['Neck'][0][i],
+                                                b=body_coordinates['Hip'][target][i],
+                                                c=body_coordinates['Knee'][target][i])
+                    hip_angles.append(180 - hip_angle)
+
+                    # 발목 각도
+                    ankle_angle = calculate_angle(a=body_coordinates['Big-toe'][target][i],
+                                                  b=body_coordinates['Ankle'][target][i],
+                                                  c=body_coordinates['Knee'][target][i])
+                    ankle_angles.append(90 - ankle_angle)
+
+                    # 시선
+                    gaze_score = inclination_to_degree(calc_inclination(dot_a=body_coordinates['Eye'][1][i],
+                                                                        dot_b=body_coordinates['Ear'][1][i]))
+                    gaze_scores.append(100 if -15 <= gaze_score <= 15 else 0)
+
+                    # 상체
+                    upper_body_socre = inclination_to_degree(calc_inclination(dot_a=body_coordinates['Neck'][0][i],
+                                                                              dot_b=body_coordinates['Mid-hip'][0][i],
+                                                                              reversed=True))
+                    upper_body_scores.append(100 if -10 <= upper_body_socre <= 10 else 0)
+
+                knee_angles = normalize_list(knee_angles)
+                hip_angles = normalize_list(hip_angles)
+                ankle_angles = normalize_list(ankle_angles)
+
+                x = np.linspace(0, 100, peaks[-1] + 1)
+                target_knee_angles = [knee_function(val) for val in x]
+                target_hip_angles = [hip_function(val) for val in x]
+                target_ankle_angles = [ankle_function(val) for val in x]
+
+                knee_score = round(cosine_similarity(target_knee_angles, knee_angles) * 100, 1)
+                hip_score = round(cosine_similarity(target_hip_angles, hip_angles) * 100, 1)
+                ankle_score = round(cosine_similarity(target_ankle_angles, ankle_angles) * 100, 1)
+                gaze_score = round(sum(gaze_scores) / (peaks[-1] + 1), 1)
+                elbow_score = round(sum(elbow_scores) / (peaks[-1] + 1), 1)
+                upper_body_score = round(sum(upper_body_scores) / (peaks[-1] + 1), 1)
+                target = 'left' if target else 'right'
+                print(f"{target}_knee_score: {knee_score}, "
+                      f"{target}_hip_score: {hip_score}, "
+                      f"{target}_ankle_score: {ankle_score}, "
+                      f" gaze: {gaze_score}, "
+                      f" elbow: {elbow_score}, "
+                      f" upper_body: {upper_body_score}")
+
+                for k, idx in body.items():
+                    for i in range(len(idx)):
+                        body_coordinates[k][i] = body_coordinates[k][i][peaks[0] + 1:]
+                frames = frames[peaks[0] + 1:]
+
+
+
+                my_audio = shared_memory.SharedMemory(name=f"{my_name}_feedback")
+                feedback = np.array(["tteesstt" + my_name])
+                my_audio_buf = np.ndarray(shape=feedback.shape, dtype=np.dtype('U40'), buffer=my_audio.buf)
+                np.copyto(my_audio_buf, feedback)
+                my_audio.close()
+
+        except BaseException as e:
+            print("in main running process")
+            print(e)
+            continue
 
 
 if __name__ == "__main__":
