@@ -7,6 +7,7 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.contrib.auth.models import User
 from django.db import models
+from rest_framework import serializers
 
 
 class Pose(models.Model):
@@ -54,3 +55,4 @@ class Profile(models.Model):
     class Meta:
         managed = True
         db_table = 'profile'
+

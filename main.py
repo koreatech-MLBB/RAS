@@ -48,6 +48,7 @@ def best_pose(start_idx, end_idx):
 def running_process(my_name, read_handle):
     new_shm = shared_memory.SharedMemory(name=my_name, create=True, size=480 * 680 * 3)
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    # cap = cv2.VideoCapture("D:\\WorkSpace\\Graduation_Project\\openpose_custom\\example\\run_example_4.mp4")
     data = b""
 
     while True:
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         'host': 'localhost',
         'port': 3306,
         'user': 'root',
-        'passwd': '1234',
+        'passwd': '1212',
         'db': 'ras'
     }
 

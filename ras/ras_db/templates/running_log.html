@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAS - Main Page</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        .header {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff4c4c;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .greeting {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .goal {
+            background-color: #fff;
+            color: #000;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .calendar {
+            text-align: center;
+            background-color: #fff;
+            color: #000;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .calendar h2 {
+            font-size: 2rem;
+            margin: 0 0 10px;
+        }
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .calendar-table th, .calendar-table td {
+            width: 14.28%;
+            text-align: center;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+        }
+        .calendar-table th {
+            color: #888;
+        }
+        .calendar-table .current-month {
+            background-color: #ff4c4c;
+            color: #fff;
+        }
+        .calendar-table .other-month {
+            background-color: #f0f0f0;
+            color: #888;
+        }
+        @media (max-width: 768px) {
+            .header, .greeting {
+                font-size: 1.5rem;
+            }
+            .goal {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">RAS</div>
+        <div class="greeting">hello! {{user}}</div>
+        <div class="goal">오늘의 목표 | 3시간 뛰기!</div>
+        {% for month, each_month in result %}
+        <div class="calendar">
+            <h2>{{month}}월</h2>
+            <table class="calendar-table">
+                <thead>
+                    <tr>
+                        <th>일</th>
+                        <th>월</th>
+                        <th>화</th>
+                        <th>수</th>
+                        <th>목</th>
+                        <th>금</th>
+                        <th>토</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for week in each_month %}
+                <tr>
+                    {% for day, time, level in week %}
+                        <td class="calendar_day"
+                            {% if level == 5 %} style="background-color: #ff1c1c; color:#fff"
+                            {% elif level == 4 %} style="background-color: #ff7a7a;"
+                            {% elif level == 3 %} style="background-color: #ff9999;"
+                            {% elif level == 2 %} style="background-color: #ffb8b8;"
+                            {% elif level == 1 %} style="background-color: #fff;"
+                            {% endif %}>
+                             <!--#ffd7d7-->
+                        {% if day %}
+                            <div class="date">{{ day }}일</div><br>
+                            <div class="count">{{ time }}</div>
+                        {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                </tbody>
+<!--                <tbody>-->
+<!--                    <tr>-->
+<!--                        <td class="current-month">25</td>-->
+<!--                        <td class="other-month">26</td>-->
+<!--                        <td class="current-month">27</td>-->
+<!--                        <td class="current-month">28</td>-->
+<!--                        <td class="current-month">29</td>-->
+<!--                        <td class="current-month">30</td>-->
+<!--                        <td class="current-month">1</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td class="current-month">2</td>-->
+<!--                        <td class="current-month">3</td>-->
+<!--                        <td class="current-month">4</td>-->
+<!--                        <td class="other-month">5</td>-->
+<!--                        <td class="other-month">6</td>-->
+<!--                        <td class="current-month">7</td>-->
+<!--                        <td class="current-month">8</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td class="current-month">9</td>-->
+<!--                        <td class="current-month">10</td>-->
+<!--                        <td class="current-month">11</td>-->
+<!--                        <td class="current-month">12</td>-->
+<!--                        <td class="current-month">13</td>-->
+<!--                        <td class="current-month">14</td>-->
+<!--                        <td class="current-month">15</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td class="current-month">16</td>-->
+<!--                        <td class="current-month">17</td>-->
+<!--                        <td class="current-month">18</td>-->
+<!--                        <td class="current-month">19</td>-->
+<!--                        <td class="current-month">20</td>-->
+<!--                        <td class="current-month">21</td>-->
+<!--                        <td class="current-month">22</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td class="current-month">23</td>-->
+<!--                        <td class="current-month">24</td>-->
+<!--                        <td class="current-month">25</td>-->
+<!--                        <td class="current-month">26</td>-->
+<!--                        <td class="current-month">27</td>-->
+<!--                        <td class="current-month">28</td>-->
+<!--                        <td class="current-month">29</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td class="current-month">30</td>-->
+<!--                        <td class="current-month">31</td>-->
+<!--                        <td class="other-month">1</td>-->
+<!--                        <td class="other-month">2</td>-->
+<!--                        <td class="other-month">3</td>-->
+<!--                        <td class="other-month">4</td>-->
+<!--                        <td class="other-month">5</td>-->
+<!--                    </tr>-->
+<!--                </tbody>-->
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
