@@ -170,3 +170,7 @@ ras/ras_db/db.sqlite3
 ras/ras_db/db.sqlite3-journal
 media
 ras/ras_db/migrations/
+
+examples/
+models/
+openpose/

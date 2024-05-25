@@ -165,15 +165,15 @@ def video_stream(user_id):
     while True:
         # 공유 메모리 열기
         try:
-            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}")
+            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}_frame")
         except:
             break
 
         # 공유 메모리에서 데이터를 NumPy 배열로 읽기
-        shm_array = np.ndarray((480, 640, 3), dtype=np.uint8, buffer=my_shm.buf)
+        shm_array = np.ndarray((720, 1280, 3), dtype=np.uint8, buffer=my_shm.buf)
 
         # NumPy 배열을 이미지로 변환
-        image = np.reshape(shm_array, (480, 640, 3))  # 예시 이미지 크기 (높이, 너비, 채널)
+        image = np.reshape(shm_array, (720, 1280, 3))  # 예시 이미지 크기 (높이, 너비, 채널)
 
         # JPEG 인코딩
         success, jpeg = cv2.imencode(".jpg", image)
@@ -181,25 +181,29 @@ def video_stream(user_id):
         # 공유 메모리 닫기
         my_shm.close()
         if not success:
-            break
+            continue
 
         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
         # time.sleep(0.05)  # 0.1초 대기
 
 def audio_view(request):
-    return render(request, 'app1/audio_template.html')
+    return render(request, 'audio_template.html')
 
-def get_next_audio(request):
-    # 오디오 파일 목록
-    audio_files = [
-        'audio/audio1.mp3',
-        'audio/audio2.mp3',
-        'audio/audio3.mp3',
-        'None'
-    ]
-    # 랜덤하게 오디오 파일 선택
-    next_audio = random.choice(audio_files)
-    return JsonResponse({'next_audio': next_audio})
+class next_audio(APIView):
+    def get(self, request, user_id):
+        try:
+            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}_feedback")
+        except:
+            return JsonResponse({'next_audio': 'None'})
+    # 공유 메모리에서 데이터를 NumPy 배열로 읽기
+        b = np.array(["a" * 40], dtype=np.dtype('U40'))
+        next_audio = np.ndarray(b.shape, dtype=np.dtype('U40'), buffer=my_shm.buf)
+        res = str(next_audio)
+        # print("in view", next_audio)
+        # 공유 메모리 닫기
+        my_shm.close()
+        # 랜덤하게 오디오 파일 선택
+        return JsonResponse({'next_audio': res})
 
 class AudioStreamingView(APIView):
     def get(self, request, user_id):

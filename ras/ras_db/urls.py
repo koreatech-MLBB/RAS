@@ -13,5 +13,5 @@ urlpatterns = [
     path('imgstreaming/<str:user_id>', views.StreamingView.as_view()),
     path('audiostreaming/<str:user_id>', views.AudioStreamingView.as_view()),
     path('streaming/<str:user_id>', views.StreamingRunning.as_view()),
-    path('get_next_audio/', views.get_next_audio, name='get_next_audio')
+    path('get_next_audio/<str:user_id>', views.next_audio.as_view())
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
