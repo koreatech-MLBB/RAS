@@ -45,6 +45,12 @@ class RunningInfoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = '__all__'
+
+
 class MainView(APIView):
     def get(self, request):
         return render(request, 'main.html')
@@ -156,7 +162,6 @@ def classify_time(total_time):
 
 
 def create_calendar(runnings):
-    # [{'running_id': 1, 'running_date': datetime.date(2024, 5, 23)}
     log_times = []
     total_result = []
     for running in runnings:
@@ -320,9 +325,24 @@ class RunningInfoView(APIView):
             return Response({"result": False, "error": "존재 하지 않는 사용자 입니다."})
 
 
-class RunningLogView(APIView):
-    def get(self, request, user_id):
-        return render(request, 'running_log.html')
+class FeedbackView(APIView):
+    def get(self, request):
+        feedbacks = Feedback.objects.all()
+        context = {"발목": [], "무릎": [], "골반": [], "상체": [], "시선": [], "팔꿈치": []}
+        for feedback in feedbacks:
+            context[feedback.type].append((feedback.id, feedback.name))
+        return render(request, 'feedback.html', {'feedbacks': context})
+
+
+class FeedbackDetailView(APIView):
+    def get(self, request, feed_id):
+        feedback = Feedback.objects.get(id=feed_id)
+        return render(request, 'feedback_detail.html', {"feedback": feedback})
+
+
+# class RunningLogView(APIView):
+#     def get(self, request, user_id):
+#         return render(request, 'running_log.html')
 
 
 def video_stream(user_id):

@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-48tchp&q%i^l7vq0hdn2@+naok_gupw-hl(ubes$1g4383iw2-
 DEBUG = True
 
 ALLOWED_HOSTS = ["192.168.56.21", "192.168.35.34", "192.168.35.148", "172.19.82.188", "192.168.153.65",
-                 "192.168.35.118", "192.168.0.60"]
+                 "192.168.35.118", "192.168.0.60", "192.168.35.196"]
 
 # Application definition
 
@@ -73,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -130,12 +131,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+# MEDIA_URL = "/media/"
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'ras_db', 'static'),
+    os.path.join(BASE_DIR, 'ras_db', 'media'),
 ]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 

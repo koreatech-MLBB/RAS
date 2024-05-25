@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback List</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0c0c0c;
+            font-family: Arial, sans-serif;
+            color: #ff4a4a;
+        }
+        .container {
+            /*max-width: 800px;*/
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .subheader {
+            font-size: 2rem;
+            color: #ccc;
+            margin-bottom: 2rem;
+        }
+        .feedback {
+            background-color: #1a1a1a;
+            padding: 2rem;
+            border-radius: 10px;
+        }
+        .feedback-section {
+            margin-bottom: 2rem;
+        }
+        .feedback-type {
+            font-size: 1.5rem;
+            color: #ff4a4a;
+            text-align: left;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #ff4a4a;
+            padding-bottom: 0.5rem;
+        }
+        .note {
+            list-style-type: none;
+            /*list-style-type: 👍;*/
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        .list-item {
+            font-size: 1.2rem;
+            padding-bottom: 0.5rem;
+            /*margin: 0.5rem 0;*/
+        }
+        .list-item a {
+            font-size: 1.1rem;
+            text-decoration: none;
+            color: #ccc;
+        }
+        .list-item a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+                padding: 1rem;
+            }
+            .logo {
+                font-size: 3rem;
+            }
+            .subheader {
+                font-size: 1.5rem;
+            }
+            .feedback-type {
+                font-size: 1.2rem;
+            }
+            .list-item {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">RAS</div>
+        <div class="subheader">- feedback Info -</div>
+
+        <div class="feedback">
+            {% for type, feedback_list in feedbacks.items %}
+                <div class="feedback-section">
+                    <h2 class="feedback-type">{{ type }}</h2>
+                    <ol class="note">
+                        {% for feedback in feedback_list %}
+                            <li class="list-item" style="color:#ff4a4a">▶  <a href="{% url 'feedback_detail' feedback.0 %}">{{ feedback.1 }}</a></li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
