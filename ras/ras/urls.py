@@ -21,3 +21,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('ras_db/', include("ras_db.urls"))
 ]
+

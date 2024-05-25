@@ -7,6 +7,7 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.contrib.auth.models import User
 from django.db import models
+from rest_framework import serializers
 
 
 class Pose(models.Model):
@@ -54,3 +55,16 @@ class Profile(models.Model):
     class Meta:
         managed = True
         db_table = 'profile'
+
+
+class Feedback(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255)
+    explain = models.TextField(max_length=1024)
+    type = models.CharField(max_length=25)
+    video_path = models.FileField(upload_to='videos/', null=True, verbose_name="")
+
+    class Meta:
+        managed = True
+        db_table = 'feedback'
+

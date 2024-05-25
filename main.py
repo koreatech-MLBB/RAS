@@ -408,7 +408,7 @@ if __name__ == "__main__":
         'host': 'localhost',
         'port': 3306,
         'user': 'root',
-        'passwd': '1234',
+        'passwd': '1212',
         'db': 'ras'
     }
 

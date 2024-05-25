@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAS</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+        .detail-container {
+            text-align: center;
+            color: #fff;
+        }
+        .detail-logo {
+            padding-top: 3rem;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4a4a;
+            margin-bottom: 2rem;
+        }
+        .date {
+            font-size: 1.5rem;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .calories {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #ff4c4c;
+            padding: 0.5rem;
+        }
+        .kcal {
+            font-size: 1rem;
+            color: #ff4c4c;
+        }
+        .running {
+            /*width: 80%;*/
+            /*flex-direction: column;*/
+            /*align-items: center;*/
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .running-item {
+            background-color: #222;
+            border-radius: 10px;
+            margin: 0.5rem;
+            padding: 1rem;
+            flex: 1 1 calc(45% - 40px);
+            text-align: center;
+        }
+        .running-item img {
+            width: 100%;
+            border-radius: 10px;
+        }
+        .label {
+            font-size: 2rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .heart-rate {
+            position: relative;
+        }
+        .heart-rate:before {
+            content: '♥';
+            position: absolute;
+            top: -25%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            color: #ff4c4c;
+        }
+        .detail {
+            font-size: 1.5rem;
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    {% if user %}
+    <div class="detail-container">
+        <div class="detail-logo">RAS for {{ user|upper }}</div>
+        <div class="date" style="text-align: right">{{ running_date }}</div>
+<!--        <div class="calories">1503<span class="kcal"> kcal</span></div>-->
+        <div class="running">
+            <div class="running-item">
+                <div class="label">러닝 시간</div>
+                <div class="value">{{ running_time }}</div>
+            </div>
+            <div class="running-item">
+                <div class="label">심박수</div>
+                <div class="value heart-rate">{{ heart_rate }} bpm</div>
+            </div>
+            <div class="running-item">
+                <div class="label">스텝 수</div>
+                <div class="value">{{ steps }}</div>
+            </div>
+            <div class="running-item">
+                <div class="label">러닝 자세</div>
+                <img src="{% static 'good_running.png' %}" alt="Running Detail">
+                <div class="detail">GOOD</div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="detail-container">
+        <div class="detail-logo">RAS</div>
+        <div class="date" style="text-align: right">2023.03.29</div>
+        <div class="calories">1503<span class="kcal"> kcal</span></div>
+        <div class="running">
+            <div class="running-item">
+                <div class="label">러닝 시간</div>
+                <div class="value">03:50:41</div>
+            </div>
+            <div class="running-item">
+                <div class="label">심박수</div>
+                <div class="value heart-rate">132 bpm</div>
+            </div>
+            <div class="running-item">
+                <div class="label">러닝 거리 | 스텝 수</div>
+                <div class="value">4.5 km</div>
+            </div>
+            <div class="running-item">
+                <div class="label">러닝 자세</div>
+                <img src="{% static 'good_running.png' %}" alt="Running Detail">
+                <div class="detail">GOOD</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+</html>

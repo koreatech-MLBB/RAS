@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        /*align-items: center;*/
+        background-color: #000;
+        font-family: Arial, sans-serif;
+        /*overflow: auto;*/
+    }
+    .signup-container {
+        text-align: center;
+        color: #fff;
+        padding: 2rem;
+    }
+    .signup-logo {
+        /*padding-top: 5rem;*/
+        font-size: 4rem;
+        color: #ff4a4a;
+        margin-bottom: 2rem;
+    }
+    .signup-form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .signup-input {
+        width: 80%;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: none;
+        border-radius: 25px;
+        background-color: #333;
+        color: #fff;
+        font-size: 1rem;
+    }
+    .signup-button {
+        width: 80%;
+        padding: 1rem;
+        border: none;
+        border-radius: 25px;
+        background-color: #ff4a4a;
+        color: #fff;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+    .signup-links {
+        margin-top: 1rem;
+    }
+    .signup-links a {
+        color: #777;
+        text-decoration: none;
+        margin: 0 0.5rem;
+    }
+    .gender-radio input[type="radio"] {
+        display: none;
+    }
+    .gender-radio input[type="radio"] + span {
+        display: inline-block;
+        padding: 0.5rem 2rem;
+        border: 0.1em solid #777;
+        border-radius: 25px;
+        text-align: center;
+        cursor: pointer;
+    }
+     .gender-radio input[type="radio"]:checked + span {
+        background-color: #ff4a4a;
+        color: #ffffff;
+    }
+    </style>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        async function signup(event){
+            event.preventDefault();
+            const user_id = document.getElementById('user_id').value;
+            const name = document.getElementById('name').value;
+            const password = document.getElementById('password').value;
+            const confirm_password = document.getElementById('confirm_password').value;
+            const age = parseInt(document.getElementById('age').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const gender = document.querySelector('input[name="gender"]:checked').value === "남성" ? 0 : 1;
+            console.log(gender)
+
+            if (password !== confirm_password) {
+                alert('비밀번호가 일치하지 않습니다.');
+                return;
+            }
+
+            const response = await fetch('/ras_db/sign/up', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ user_id: user_id, name:name,
+                    password: password, age:age, weight:weight, height:height,
+                    gender: gender}),
+            });
+
+            const data = await response.json();
+            console.log("log... :", data)
+            if (data.result) {
+                alert("회원가입이 완료되었습니다!");
+                const loginUrl = new URL("{% url 'login' %}", window.location.origin);
+                loginUrl.searchParams.append('user_id', user_id);
+                loginUrl.searchParams.append('password', password);
+                window.location.href = loginUrl;
+            } else {
+                alert("회원가입에 실패하였습니다..." + data.message)
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-logo">RAS</div>
+        <form action="/ras_db/sign/up" onsubmit="signup(event)" class="signup-form">
+            {% csrf_token %}
+            <input type="text" placeholder="아이디" class="signup-input" id="user_id">
+            <input type="text" placeholder="사용자 이름" class="signup-input" id="name">
+            <input type="password" placeholder="비밀번호" class="signup-input" id="password">
+            <input type="password" placeholder="비밀번호 확인" class="signup-input" id="confirm_password">
+            <input type="number" placeholder="나이" class="signup-input" id="age">
+            <input type="number" step="1" placeholder="체중 (kg)" class="signup-input" id="weight">
+            <input type="number" step="1" placeholder="신장 (cm)" class="signup-input" id="height">
+            <div style="padding-bottom: 1rem">
+                <label class="gender-radio">
+                    <input type="radio" value="남성" class="signup-input" name="gender">
+                    <span>남성</span>
+                </label>
+                <label class="gender-radio">
+                    <input type="radio" value="여성" class="signup-input" name="gender">
+                    <span>여성</span>
+                </label>
+            </div>
+            <input type="submit" class="signup-button" value="회원가입">
+        </form>
+        <div class="signup-links">
+<!--            TODO: 로그인 화면 링크 수정 -->
+            <a href="{% url 'main' %}">메인 화면으로 돌아가기</a>
+        </div>
+    </div>
+</body>
+</html>
