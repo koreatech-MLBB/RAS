@@ -349,7 +349,7 @@ def video_stream(user_id):
     while True:
         # 공유 메모리 열기
         try:
-            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}")
+            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}_frame")
         except:
             break
 
@@ -357,12 +357,13 @@ def video_stream(user_id):
         shm_array = np.ndarray((480, 640, 3), dtype=np.uint8, buffer=my_shm.buf)
         # NumPy 배열을 이미지로 변환
         image = np.reshape(shm_array, (480, 640, 3))  # 예시 이미지 크기 (높이, 너비, 채널)
+      
         # JPEG 인코딩
         success, jpeg = cv2.imencode(".jpg", image)
         # 공유 메모리 닫기
         my_shm.close()
         if not success:
-            break
+            continue
 
         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
         # time.sleep(0.05)  # 0.1초 대기
@@ -383,6 +384,7 @@ def get_next_audio(request):
     # 랜덤하게 오디오 파일 선택
     next_audio = random.choice(audio_files)
     return JsonResponse({'next_audio': next_audio})
+
 
 
 class AudioStreamingView(APIView):
