@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAS Running App</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            /*flex-direction: column;*/
+            justify-content: center;
+            /*align-items: center;*/
+            height: 100vh;
+        }
+        .container {
+            text-align: center;
+        }
+        .header {
+            padding-top: 5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4a4a;
+            padding-bottom: 2rem;
+            /*margin-bottom: 20px;*/
+        }
+        .main-button {
+            background-color: #ff4c4c;
+            border: none;
+            border-radius: 10px;
+            padding: 1.3rem 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        .main-button:hover {
+            background-color: #ff1c1c;
+        }
+        .feed-button {
+            background-color: #666;
+            /*background-color: #a4ffa4;*/
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        .feed-button:hover {
+            background-color: #333;
+            /*background-color: #528f41;*/
+        }
+        .run_menu {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            justify-content: space-between;
+        }
+        .menu {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+        .menu-button {
+            background-color: #222;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            flex: 1;
+            margin: 5px;
+        }
+        .menu-button:hover {
+            background-color: #444;
+        }
+    </style>
+    <script>
+        async function feedback(event) {
+            event.preventDefault();
+            const fbUrl = new URL(`/ras_db/feedback?userid={{user_id}}`, window.location.origin);
+            window.location.href = fbUrl
+        }
+        async function startRunning(event) {
+            // alert('Starting running...');
+            event.preventDefault();
+            const response = await fetch(`/ras_db/{{user_id}}/running`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json()
+            if (data.result) {
+                // alert("달리기가 시작되었습니다. ~^0^~");
+                const videoUrl = new URL(`/ras_db/streaming/{{user_id}}`, window.location.origin);
+                window.location.href = videoUrl
+            }
+        }
+        function viewProfile(event) {
+            event.preventDefault();
+            const videoUrl = new URL(`/ras_db/{{user_id}}/profile`, window.location.origin);
+            window.location.href = videoUrl
+        }
+        function viewPreviousRuns(event) {
+            event.preventDefault();
+            const logUrl = new URL(`/ras_db/{{user_id}}/running`, window.location.origin);
+            window.location.href = logUrl
+            // alert('Viewing previous runs...');
+            // Add logic to view previous runs
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        {% if user_id %}
+            <div class="header">{{ user_id.upper }} <br> ARE YOU READY? </div>
+        {% else %}
+            <div class="header">ARE YOU READY? </div>
+        {% endif %}
+        <div class="run_menu">
+            <button class="main-button" onclick="startRunning(event)">Start Running</button>
+            <button class="feed-button" onclick="feedback(event)">피드백 설명</button>
+        </div>
+        <div class="menu">
+            <button class="menu-button" onclick="viewProfile(event)">마이페이지</button>
+            <button class="menu-button" onclick="viewPreviousRuns(event)">달리기 기록</button>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="ko" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Detail</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0c0c0c;
+            font-family: Arial, sans-serif;
+            color: #ff4a4a;
+        }
+        .container {
+            margin: auto;
+            border: 1px solid #000;
+            text-align: center;
+            border-radius: 10px;
+        }
+        .back-button {
+            width: 100%;
+            text-align: left;
+        }
+        .go-back {
+            border: none;
+            outline: none;
+            background-color: inherit ;
+            cursor: pointer;
+            font-size: 3rem;
+            color: #fff;
+        }
+        .logo {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #ff4a4a;
+        }
+        .subheader {
+            color: #ccc;
+            text-align: center;
+            font-size: 1.5rem;
+            padding-bottom: 2.5rem;
+        }
+        .subname {
+            color: #ccc;
+            text-align: left;
+            font-size: 1.2rem;
+            padding-bottom: 2rem;
+            /*padding: 0rem 1rem 0.3rem 1rem;*/
+        }
+        .note {
+            background-color: #222;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        .details {
+            color: #ccc;
+            font-size: 1rem;
+            text-align: left;
+            /*padding: 10px 0;*/
+        }
+        .video {
+            padding-top: 1rem;
+            text-align: center;
+        }
+        .video video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+    <script>
+    async function goBack(event) {
+            event.preventDefault();
+            const urlstr = window.location.href;
+            const url = new URL(urlstr);
+            const urlParams = url.searchParams;
+            const user = urlParams.get('userid')
+            const backUrl = new URL(`/ras_db/feedback?userid=${user}`, window.location.origin);
+            window.location.href = backUrl
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="back-button"><button class="go-back" onclick="goBack(event)">↩</button></div>
+
+        <div class="logo">RAS</div>
+        <div class="subheader"><b>피드백 상세 설명</b></div>
+        <div class="note">
+            <div class="subname"><b>{{name}}</b></div>
+            <div class="details">
+                {% for feedback_e in explain %}
+                    {{feedback_e|linebreaksbr}} <br>
+                {% endfor %}
+
+                {% if video_path %}
+                <div class="video">
+                    <video autoplay="autoplay" muted="muted" loop="loop">
+                        <source src="{% get_static_prefix %}{{feedback.video_path}}"
+                                type="video/mp4">
+                    </video>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

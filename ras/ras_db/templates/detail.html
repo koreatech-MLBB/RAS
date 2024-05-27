@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAS</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            /*width: 100%;*/
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            /*align-items: center;*/
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+        .detail-container {
+            text-align: center;
+            color: #fff;
+        }
+        .back-button {
+            width: 100%;
+            text-align: left;
+        }
+        .go-back {
+            border: none;
+            outline: none;
+            background-color: inherit ;
+            cursor: pointer;
+            font-size: 3rem;
+            color: #fff;
+        }
+        .detail-logo {
+            padding-top: 1rem;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff4a4a;
+            margin-bottom: 1.4rem;
+        }
+        .date {
+            font-size: 2rem;
+            color: #888;
+            margin-bottom: 1rem;
+            margin-right: 1rem;
+        }
+        .calories {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #ff4c4c;
+            padding: 0.5rem;
+        }
+        .kcal {
+            font-size: 1rem;
+            color: #ff4c4c;
+        }
+        .running {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .running-align {
+            display: flex;
+            border-radius: 10px;
+            margin: 0.5rem;
+            flex: 1 1 calc(47% - 40px);
+            text-align: center;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .running-item {
+            background-color: #222;
+            border-radius: 10px;
+            margin: 0.5rem;
+            padding: 1rem;
+            flex: 1 1 calc(45% - 0.5rem);
+            text-align: center;
+        }
+        .running-inner-item {
+            background-color: #222;
+            border-radius: 10px;
+            margin: auto 0; /* 수직 가운데 정렬 */
+            width: 100%; /* 가로 크기 전체를 차지 */
+            text-align: center;
+            justify-content: center;
+        }
+        .running-inner-item:first-child {
+            flex: 0 0 22%;
+        }
+
+        .running-inner-item:last-child {
+            flex: 1;
+        }
+        .video-item {
+            width: 10rem;
+            background-color: #222;
+            border-radius: 10px;
+            margin: 0.5rem;
+            padding: 1rem;
+            flex: 1 1 calc(45% - 40px);
+            text-align: center;
+        }
+        .running-item img {
+            width: 50%;
+            border-radius: 10px;
+        }
+        .label {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+        .value {
+            font-size: 1.5rem;
+            /*font-weight: bold;*/
+        }
+        .value-feed {
+            font-size: 1.5rem;
+            text-align: left;
+            padding: 5rem;
+        }
+        .heart-rate {
+            position: relative;
+        }
+        .heart-rate:before {
+            content: '♥';
+            position: absolute;
+            top: -25%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            color: #ff4c4c;
+        }
+        .detail {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff00;
+            margin-bottom: 1rem;
+        }
+        video {
+            max-width: 100%;
+            height: auto;
+            -webkit-user-select: none;
+            border-radius: 10px;
+        }
+    </style>
+    <script>
+        async function goBack(event) {
+            event.preventDefault();
+            const backUrl = new URL(`/ras_db/{{user}}/running`, window.location.origin);
+            window.location.href = backUrl
+        }
+    </script>
+</head>
+<body>
+    {% if user %}
+    <div class="detail-container">
+        <div class="back-button"><button class="go-back" onclick="goBack(event)">↩</button></div>
+        <div class="detail-logo">RAS for {{ user|upper }}</div>
+        <div class="date" style="text-align: right">{{ running_date }}</div>
+<!--        <div class="calories">1503<span class="kcal"> kcal</span></div>-->
+        <div class="running">
+            <div class="running-item">
+                <div class="label">러닝 시간</div>
+                <div class="value">{{ running_time }}</div>
+            </div>
+            <div class="running-item">
+                <div class="label">심박수</div>
+                <div class="value heart-rate">{{ heart_rate }} bpm</div>
+            </div>
+            <div class="running-align">
+                <div class="running-inner-item" style="margin-bottom: 0.5rem;">
+                    <div class="label">스텝 수</div>
+                    <div class="value">{{ steps }}</div>
+                </div>
+                <div class="running-inner-item" style="margin-top: 0.5rem; ">
+                    <div class="label">종합 점수</div>
+                    <div class="value-feed">
+                        발목 점수 : 54 | 65 <br>
+                        무릎 점수 : 78 | 89 <br>
+                        골반 점수 : 45 | 23 <br>
+                        시선 점수 : 100 <br>
+                        팔꿈치 점수 : 89 <br>
+                        상체 점수 : 100
+                    </div>
+                </div>
+            </div>
+            <div class="video-item">
+                <div class="label">러닝 자세</div>
+                <div class="detail">GOOD</div>
+
+                <video autoplay="autoplay" muted="muted" loop="loop">
+                    <source src="{% static 'media/videos/run_example_3.mp4' %}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+<!--                <div><img id="video" src="{% static '/media/videos/run_example_3.mp4' %}" width="auto" height="auto"></div>-->
+                <!--<img src="{% static 'good_running.png' %}" alt="Running Detail" width="auto" height="auto">-->
+            </div>
+            <div class="running-item">
+                <div class="label">피드백 요약</div>
+                <div class="value">
+                    오른발 지지시 발목을 위로 조금 더 접어주세요.<br>
+                    왼발 전진시 허벅다리를 조금 더 높게 들어주세요.<br>
+                    팔꿈치를 직각보다 작게 유지해주세요.<br>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="detail-container">
+        <div class="detail-logo">RAS</div>
+        <div class="date" style="text-align: right">2023.03.29</div>
+        <div class="calories">1503<span class="kcal"> kcal</span></div>
+        <div class="running">
+            <div class="running-item">
+                <div class="label">러닝 시간</div>
+                <div class="value">03:50:41</div>
+            </div>
+            <div class="running-item">
+                <div class="label">심박수</div>
+                <div class="value heart-rate">132 bpm</div>
+            </div>
+            <div class="running-item">
+                <div class="label">러닝 거리 | 스텝 수</div>
+                <div class="value">4.5 km</div>
+            </div>
+            <div class="running-item">
+                <div class="label">러닝 자세</div>
+                <img src="{% static 'good_running.png' %}" alt="Running Detail">
+                <div class="detail">GOOD</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.5/sweetalert2.all.min.js"></script>
+</body>
+</html>
+{% load sweetify %}
+{% sweetify %}
