@@ -26,3 +26,4 @@ urlpatterns = [
   path('feedback/<int:feed_id>', FeedbackDetailView.as_view(), name='feedback_detail')
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL,
                                                                              document_root=settings.MEDIA_ROOT)
+
