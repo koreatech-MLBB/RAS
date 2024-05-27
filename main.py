@@ -46,6 +46,7 @@ def best_pose(start_idx, end_idx):
 
 
 def running_process(my_name, read_handle):
+    print(f"{my_name}: streaming")
     new_shm = shared_memory.SharedMemory(name=my_name, create=True, size=480 * 680 * 3)
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     # cap = cv2.VideoCapture("D:\\WorkSpace\\Graduation_Project\\openpose_custom\\example\\run_example_4.mp4")
@@ -64,10 +65,6 @@ def running_process(my_name, read_handle):
         my_shm_buf = np.ndarray((480, 640, 3), dtype=np.uint8, buffer=my_shm.buf)
         np.copyto(my_shm_buf, frame)
         my_shm.close()
-        # 여기에 frame으로 작업 처리하는 코드 작성
-        # if ret:
-        # cv2.imwrite(output_path, frame)
-        # time.sleep(1)
 
 
 if __name__ == "__main__":

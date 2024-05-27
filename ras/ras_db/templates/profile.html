@@ -23,10 +23,22 @@
             max-width: 30rem;
             text-align: center;
         }
+        .back-button {
+            width: 100%;
+            text-align: left;
+        }
+        .go-back {
+            border: none;
+            outline: none;
+            background-color: inherit ;
+            cursor: pointer;
+            font-size: 3rem;
+            color: #fff;
+        }
         .header {
             font-size: 3rem;
             font-weight: bold;
-            color: #ff4c4c;
+            color: #ff4a4a;
             margin-bottom: 2rem;
             padding-top: 1rem;
         }
@@ -40,16 +52,17 @@
         .label {
             font-size: 1rem;
             color: #888;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.3rem;
         }
         .value {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: bold;
         }
         .buttons {
             display: flex;
             justify-content: space-around;
             margin-top: 2rem;
+            margin-bottom: 2rem;
         }
         .button {
             background-color: #ff4c4c;
@@ -68,8 +81,9 @@
         }
     </style>
     <script>
-        function editProfile() {
-            // Add logic to edit profile
+        function logout() {
+            const loginUrl = new URL(`/ras_db/sign/in`, window.location.origin);
+            window.location.href = loginUrl
         }
 
         function goBack() {
@@ -88,6 +102,8 @@
 <body>
 {% if name %}
     <div class="container">
+        <div class="back-button"><button class="go-back" onclick="goBack(event)">↩</button></div>
+
         <div class="header">My Page</div>
         <div class="profile-item">
             <div class="label">Username</div>
@@ -96,10 +112,6 @@
         <div class="profile-item">
             <div class="label">User ID</div>
             <div class="value" id="userid">{{user_id}}</div>
-        </div>
-        <div class="profile-item">
-            <div class="label">User Password</div>
-            <div class="value" id="userpassword">********</div>
         </div>
         <div class="profile-item">
             <div class="label">Age</div>
@@ -118,8 +130,7 @@
             <div class="value" id="gender">{{gender}}</div>
         </div>
         <div class="buttons">
-            <button class="button" onclick="editProfile(event)">정보 수정</button>
-            <button class="button" onclick="goBack(event)">이전 화면</button>
+            <button class="button" onclick="logout(event)">로그 아웃</button>
         </div>
     </div>
 {% else %}
@@ -155,7 +166,6 @@
         </div>
         <div class="buttons">
             <button class="button" onclick="editProfile()">정보 수정</button>
-            <button class="button" onclick="goBack()">이전 화면</button>
         </div>
     </div>
 {% endif %}
