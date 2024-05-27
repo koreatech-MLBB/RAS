@@ -11,7 +11,6 @@ sys.path.append(openpose_dir)
 try:
     import pyopenpose as op
 except ImportError as e:
-    print(e)
     raise e
 
 # 필요한 모듈들 import하기
@@ -53,20 +52,29 @@ def running_process(my_name, read_handle):
         ret, test_frame = cap.read()
         if ret:
             break
-    # print(test_frame.shape)
 
     # 테스트 프레임 크기로 공유 메모리 생성
     buf1 = shared_memory.SharedMemory(name=f"{my_name}_frame",
                                       create=True,
                                       size=test_frame.shape[0] * test_frame.shape[1] * test_frame.shape[2])
-    # print(_.name)
 
     # 피드백 문자열 전달할 공유 메모리 생성
-    b = np.array(["a" * 40], dtype=np.dtype('U40'))
+    b = np.ndarray(shape=(1, ), dtype=np.uint8)
     buf2 = shared_memory.SharedMemory(name=f"{my_name}_feedback",
                                       create=True,
                                       size=b.nbytes)
-    # print(_.name)
+
+    # 점수 전달할 공유 메모리 생성
+    info = np.ndarray(shape=(11, ), dtype=np.float64)
+    buf3 = shared_memory.SharedMemory(name=f"{my_name}_info",
+                                      create=True,
+                                      size=info.nbytes)
+
+    # 피드백 등장 횟수 전달할 공유 메모리 생성
+    feed_cnt = np.ndarray(shape=(3, ), dtype=np.uint8)
+    buf4 = shared_memory.SharedMemory(name=f"{my_name}_feed_cnt",
+                                      create=True,
+                                      size=feed_cnt.nbytes)
 
     # openpose 모델에 필요한 객체 생성
     op_wrapper = op.WrapperPython()
@@ -102,6 +110,11 @@ def running_process(my_name, read_handle):
         'upper_body_score': []
     }
 
+    # 피드백 등장 횟수 카운트
+    cnt_feedback = {}
+
+    steps = 0
+
     # 시작!
     while True:
 
@@ -136,30 +149,10 @@ def running_process(my_name, read_handle):
                     # 비디오 라이터 객체 해제
                     out.release()
 
-                    # 점수 출럭
-                    total_left_knee_score = round(sum(total_score['knee_score'][1]) / len(total_score['knee_score'][1]), 2)
-                    total_right_knee_score = round(sum(total_score['knee_score'][0]) / len(total_score['knee_score'][0]), 2)
-                    total_left_hip_score = round(sum(total_score['hip_score'][1]) / len(total_score['hip_score'][1]), 2)
-                    total_right_hip_score = round(sum(total_score['hip_score'][0]) / len(total_score['hip_score'][0]), 2)
-                    total_left_ankle_score = round(sum(total_score['ankle_score'][1]) / len(total_score['ankle_score'][1]), 2)
-                    total_right_ankle_score = round(sum(total_score['ankle_score'][0]) / len(total_score['ankle_score'][0]), 2)
-                    total_gaze_score = round(sum(total_score['gaze_score']) / len(total_score['gaze_score']), 2)
-                    total_elbow_score = round(sum(total_score['elbow_score']) / len(total_score['elbow_score']), 2)
-                    total_upper_body_score = round(sum(total_score['upper_body_score']) / len(total_score['upper_body_score']), 2)
+                    score = {}
 
-                    score = {
-                        'left_knee_score': total_left_knee_score,
-                        'right_knee_score': total_right_knee_score,
-                        'left_ankle_score': total_left_ankle_score,
-                        'right_ankle_score': total_right_ankle_score,
-                        'left_hip_score': total_left_hip_score,
-                        'right_hip_score': total_right_hip_score,
-                        'gaze_score': total_gaze_score,
-                        'elbow_score': total_elbow_score,
-                        'upper_body_score': total_upper_body_score
-                    }
-
-                    for key in ['knee_score', 'hip_score', 'ankle_score']:
+                    # 총점 계산
+                    for key in ['ankle_score', 'knee_score', 'hip_score']:
                         for index, direct in [(0, 'right'), (1, 'left')]:
                             score[f"{direct}_{key}"] = round(
                                 sum(total_score[key][index]) / len(total_score[key][index]), 2)
@@ -167,7 +160,46 @@ def running_process(my_name, read_handle):
                     for key in ['gaze_score', 'elbow_score', 'upper_body_score']:
                         score[key] = round(sum(total_score[key]) / len(total_score[key]), 2)
 
+                    score['total_score'] = 0
+
+                    # 가중치를 곱하여 계산
+                    for key, _val in score.items():
+                        if key not in ['gaze_score', 'elbow_score', 'upper_body_score']:
+                            score['total_score'] += _val * 3
+                        else:
+                            score['total_score'] += _val
+
+                    score['total_score'] = round(score['total_score'] / 21, 2)
+
                     print(score)
+
+                    # 점수 및 걸음 수 저장
+                    # 순서
+                    # [0] = right_ankle_score
+                    # [1] = left_ankle_score
+                    # [2] = right_knee_score
+                    # [3] = left_knee_score
+                    # [4] = right_hip_score
+                    # [5] = left_hip_score
+                    # [6] = gaze_score
+                    # [7] = elbow_score
+                    # [8] = upper_body_score
+                    # [9] = total_score
+                    # [10] = steps
+                    my_score = shared_memory.SharedMemory(name=f"{my_name}_info")
+                    my_scores = np.array([x for x in score.values()] + [steps])
+                    my_scores_buf = np.ndarray(shape=(11, ), dtype=np.float64, buffer=my_score.buf)
+                    np.copyto(my_scores_buf, my_scores)
+                    my_score.close()
+
+                    # 피드백 등장 횟수 저장
+                    my_feed_cnt = shared_memory.SharedMemory(name=f"{my_name}_feed_cnt")
+                    f = list(cnt_feedback.items()) + [(-1, 0), (-1, 0), (-1, 0)]
+                    f = list(sorted(f, key=lambda x: x[1], reverse=True))
+                    feed_cnts = np.array([f[i][0] for i in range(3)])
+                    my_feed_cnt_buf = np.ndarray(shape=(3, ), dtype=np.uint8, buffer=my_feed_cnt.buf)
+                    np.copyto(my_feed_cnt_buf, feed_cnts)
+                    my_feed_cnt.close()
 
                 break
 
@@ -200,7 +232,7 @@ def running_process(my_name, read_handle):
             frames.append(datum.cvOutputData)
 
             # Neck좌표에 -1을 곱하여 np.array로 변환
-            neck_position = -1 * np.array([y for _, y in body_coordinates['Neck'][0]])
+            neck_position = -1 * np.array([round(y, -1) for _, y in body_coordinates['Neck'][0]])
 
             # Neck좌표를 find_peaks로 전달 -> peak값 뽑기
             peaks, _ = find_peaks(neck_position)
@@ -208,43 +240,11 @@ def running_process(my_name, read_handle):
             # peaks의 길이가 2라면: 한 달리기 주기이므로 점수 계산
             if len(peaks) == 2:
 
+                # 걸음수 +1
+                steps += 1
+
                 # target: 앞으로 가고 있는 발 (이번 주기의 점수 측정 대상이 되는 발)
                 target = 1 if body_coordinates['Ankle'][0][0] > body_coordinates['Ankle'][1][0] else 0
-
-                # 논문 그래프에서 추출한 시간에 따른 무릎 각도 함수
-                knee_function = lambda _x: (
-                        (1.3148 * (0.1 ** 8)) * (_x ** 5)
-                        - (3.3236 * (0.1 ** 6)) * (_x ** 4)
-                        + 0.0002891 * (_x ** 3)
-                        - 0.010055 * (_x ** 2)
-                        + 0.12522 * _x
-                )
-
-                # 논문 그래프에서 추출한 시간에 따른 골반 각도 함수
-                hip_function = lambda _x: (
-                        (-4.1847 * (0.1 ** 14)) * (_x ** 8)
-                        + (1.6414 * (0.1 ** 11)) * (_x ** 7)
-                        - (2.484 * (0.1 ** 9)) * (_x ** 6)
-                        + (1.8194 * (0.1 ** 7)) * (_x ** 5)
-                        - (6.8429 * (0.1 ** 6)) * (_x ** 4)
-                        + 0.0001503 * (_x ** 3)
-                        - 0.0024657 * (_x ** 2)
-                        + 0.0020494 * _x
-                        + 0.91
-                )
-
-                # 논문 그래프에서 추출한 시간에 따른 발목 각도 함수
-                ankle_function = lambda _x: (
-                        1.8553 * (0.1 ** 14) * (_x ** 8)
-                        - 1.4506 * (0.1 ** 11) * (_x ** 7)
-                        + 3.916 * (0.1 ** 9) * (_x ** 6)
-                        - 5.0626 * (0.1 ** 7) * (_x ** 5)
-                        + 3.4058 * (0.1 ** 5) * (_x ** 4)
-                        - 0.0011533 * (_x ** 3)
-                        + 0.016508 * (_x ** 2)
-                        - 0.059354 * _x
-                        + 0.68168
-                )
 
                 # 각 관절의 각도를 저장할 리스트 생성
                 knee_angles = []
@@ -254,12 +254,13 @@ def running_process(my_name, read_handle):
                 # 시선, 상체의 점수를 저장할 리스트 생성
                 gaze_scores = []
                 upper_body_scores = []
+                elbow_scores = []
 
                 # 팔꿈치 각도 점수 계산
-                elbow_scores = elbow_angle_calc_scores(shoulder=body_coordinates['Shoulder'],
-                                                       elbow=body_coordinates['Elbow'],
-                                                       wrist=body_coordinates['Wrist'],
-                                                       length=peaks[-1] + 1)
+                # elbow_scores = elbow_angle_calc_scores(shoulder=body_coordinates['Shoulder'],
+                #                                        elbow=body_coordinates['Elbow'],
+                #                                        wrist=body_coordinates['Wrist'],
+                #                                        length=peaks[-1] + 1)
 
                 # 한 달리기 주기의 각 관절 각도 계산
                 for i in range(peaks[-1] + 1):
@@ -267,19 +268,28 @@ def running_process(my_name, read_handle):
                     knee_angle = calculate_angle(a=body_coordinates['Hip'][target][i],
                                                  b=body_coordinates['Knee'][target][i],
                                                  c=body_coordinates['Ankle'][target][i])
-                    knee_angles.append(180 - knee_angle)
+                    knee_angles.append(180 - knee_angle if knee_angle is not None else knee_angles[-1])
 
                     # 골반 각도
                     hip_angle = calculate_angle(a=body_coordinates['Neck'][0][i],
                                                 b=body_coordinates['Hip'][target][i],
                                                 c=body_coordinates['Knee'][target][i])
-                    hip_angles.append(180 - hip_angle)
+                    hip_angles.append(180 - hip_angle if hip_angle is not None else hip_angles[-1])
 
                     # 발목 각도
                     ankle_angle = calculate_angle(a=body_coordinates['Big-toe'][target][i],
                                                   b=body_coordinates['Ankle'][target][i],
                                                   c=body_coordinates['Knee'][target][i])
-                    ankle_angles.append(90 - ankle_angle)
+                    ankle_angles.append(90 - ankle_angle if ankle_angle is not None else ankle_angles[-1])
+
+                    # 팔꿈치
+                    elbow_angle = calculate_angle(a=body_coordinates['Shoulder'][1][i],
+                                                  b=body_coordinates['Elbow'][1][i],
+                                                  c=body_coordinates['Wrist'][1][i])
+                    if elbow_angle is not None:
+                        elbow_scores.append(100 if 70 <= elbow_angle <= 100 else 0)
+                    else:
+                        elbow_scores.append(elbow_scores[-1])
 
                     # 시선
                     gaze_score = inclination_to_degree(calc_inclination(dot_a=body_coordinates['Eye'][1][i],
@@ -290,7 +300,7 @@ def running_process(my_name, read_handle):
                     upper_body_score = inclination_to_degree(calc_inclination(dot_a=body_coordinates['Neck'][0][i],
                                                                               dot_b=body_coordinates['Mid-hip'][0][i],
                                                                               reversed=True))
-                    upper_body_scores.append(100 if -10 <= upper_body_score <= 10 else 0)
+                    upper_body_scores.append(100 if -15 <= upper_body_score <= 15 else 0)
 
                 # 각 관절 각도를 0~1로 정규화
                 knee_angles = normalize_list(knee_angles)
@@ -315,15 +325,6 @@ def running_process(my_name, read_handle):
                 elbow_score = round(sum(elbow_scores) / (peaks[-1] + 1), 1)
                 upper_body_score = round(sum(upper_body_scores) / (peaks[-1] + 1), 1)
 
-                # log
-                # target = 'left' if target else 'right'
-                # print(f"{target}_knee_score: {knee_score}, "
-                #       f"{target}_hip_score: {hip_score}, "
-                #       f"{target}_ankle_score: {ankle_score}, "
-                #       f" gaze: {gaze_score}, "
-                #       f" elbow: {elbow_score}, "
-                #       f" upper_body: {upper_body_score}")
-
                 best_score = sum([x * 3 for x in [knee_score, hip_score, ankle_score]] + [gaze_score, elbow_score,
                                                                                           upper_body_score]) / 12
                 if best_frames[1] < best_score:
@@ -337,38 +338,46 @@ def running_process(my_name, read_handle):
                 total_score['elbow_score'].append(elbow_score)
                 total_score['upper_body_score'].append(upper_body_score)
 
+                # 피드백 생성을 위한 target 재정규화
                 target_ankle_angles = np.array(normalize_list(norm_target_ankle_angles, a=-20, b=30))
                 target_knee_angles = np.array(normalize_list(norm_target_knee_angles, a=20, b=90))
                 target_hip_angles = np.array(normalize_list(norm_target_hip_angles, a=-5, b=56))
 
+                # np.array로 변환
                 ankle_angles = np.array(ankle_angles)
                 knee_angles = np.array(knee_angles)
                 hip_angles = np.array(hip_angles)
 
                 # 여기서 피드백 발생
-                _idx = 0
                 feedbacks = []
-                for target_angles, user_angles, score in [(target_ankle_angles, ankle_angles, ankle_score),
-                                                          (target_knee_angles, knee_angles, knee_score),
-                                                          (target_hip_angles, hip_angles, hip_score)]:
-                    if score < 90:
+                for target_angles, user_angles, _score, _idx in [(target_ankle_angles, ankle_angles, ankle_score, 0),
+                                                                 (target_knee_angles, knee_angles, knee_score, 1),
+                                                                 (target_hip_angles, hip_angles, hip_score, 2)]:
+                    if _score < 90:
                         feedback_list = feedback(user_angles=user_angles,
                                                  target_angles=target_angles,
                                                  mid=int((peaks[-1] + 1) * 0.3),
                                                  body_point=_idx,
-                                                 direction="오른쪽" if target else "왼쪽",
+                                                 direction="왼" if target else "오른",
                                                  threshold=20)
 
                         for _val in feedback_list:
                             feedbacks.append(_val)
-                    _idx += 1
 
-                if upper_body_score == 0:
-                    feedbacks.append("허리를 곧게 세우고 달리는것이 안전합니다.")
-                if gaze_score == 0:
-                    feedbacks.append("시선은 정면을 보는 것이 안전합니다.")
-                if elbow_score == 0:
-                    feedbacks.append("팔꿈치는 직각을 유지해 주세요.")
+                if upper_body_score <= 20:
+                    feedbacks.append(25)
+                if gaze_score <= 20:
+                    feedbacks.append(26)
+                if elbow_score <= 20:
+                    feedbacks.append(27)
+
+                # 피드백 등장 횟수 카운트
+                for f in feedbacks:
+                    try:
+                        cnt_feedback[f] += 1
+                    except KeyError:
+                        print(f"sub_process: there is no key({f}) in cnt_feedback.")
+                        cnt_feedback[f] = 1
 
                 # 앞서 계산한 한 주기의 절반만큼의 정보를 삭제
                 for k, __idx in body.items():
@@ -376,10 +385,13 @@ def running_process(my_name, read_handle):
                         body_coordinates[k][i] = body_coordinates[k][i][peaks[0] + 1:]
                 frames = frames[peaks[0] + 1:]
 
-                # 생성된 피드백을 공유메모리에 문자열 형태로 저장
+                # 생성된 피드백을 공유메모리에 id로 저장
                 my_audio = shared_memory.SharedMemory(name=f"{my_name}_feedback")
-                feedback_str = np.array(["None" if len(feedbacks) == 0 else feedbacks[0]])
-                my_audio_buf = np.ndarray(shape=feedback_str.shape, dtype=np.dtype('U40'), buffer=my_audio.buf)
+                if feedbacks:
+                    feedback_str = np.array([feedbacks[0]])
+                else:
+                    feedback_str = np.array([-1])
+                my_audio_buf = np.ndarray(shape=(1, ), dtype=np.uint8, buffer=my_audio.buf)
                 np.copyto(my_audio_buf, feedback_str)
                 my_audio.close()
 
