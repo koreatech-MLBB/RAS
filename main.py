@@ -52,20 +52,17 @@ def running_process(my_name, read_handle):
         ret, test_frame = cap.read()
         if ret:
             break
-    # print(test_frame.shape)
 
     # 테스트 프레임 크기로 공유 메모리 생성
     buf1 = shared_memory.SharedMemory(name=f"{my_name}_frame",
                                       create=True,
                                       size=test_frame.shape[0] * test_frame.shape[1] * test_frame.shape[2])
-    # print(_.name)
 
     # 피드백 문자열 전달할 공유 메모리 생성
     b = np.ndarray(shape=(1, ), dtype=np.uint8)
     buf2 = shared_memory.SharedMemory(name=f"{my_name}_feedback",
                                       create=True,
                                       size=b.nbytes)
-    # print(_.name)
 
     # 점수 전달할 공유 메모리 생성
     info = np.ndarray(shape=(11, ), dtype=np.float64)
@@ -352,11 +349,10 @@ def running_process(my_name, read_handle):
                 hip_angles = np.array(hip_angles)
 
                 # 여기서 피드백 발생
-                _idx = 0
                 feedbacks = []
-                for target_angles, user_angles, _score in [(target_ankle_angles, ankle_angles, ankle_score),
-                                                           (target_knee_angles, knee_angles, knee_score),
-                                                           (target_hip_angles, hip_angles, hip_score)]:
+                for target_angles, user_angles, _score, _idx in [(target_ankle_angles, ankle_angles, ankle_score, 0),
+                                                                 (target_knee_angles, knee_angles, knee_score, 1),
+                                                                 (target_hip_angles, hip_angles, hip_score, 2)]:
                     if _score < 90:
                         feedback_list = feedback(user_angles=user_angles,
                                                  target_angles=target_angles,
@@ -367,7 +363,6 @@ def running_process(my_name, read_handle):
 
                         for _val in feedback_list:
                             feedbacks.append(_val)
-                    _idx += 1
 
                 if upper_body_score <= 20:
                     feedbacks.append(25)
@@ -392,7 +387,10 @@ def running_process(my_name, read_handle):
 
                 # 생성된 피드백을 공유메모리에 id로 저장
                 my_audio = shared_memory.SharedMemory(name=f"{my_name}_feedback")
-                feedback_str = np.array([feedbacks[0]])
+                if feedbacks:
+                    feedback_str = np.array([feedbacks[0]])
+                else:
+                    feedback_str = np.array([-1])
                 my_audio_buf = np.ndarray(shape=(1, ), dtype=np.uint8, buffer=my_audio.buf)
                 np.copyto(my_audio_buf, feedback_str)
                 my_audio.close()
