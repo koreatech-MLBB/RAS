@@ -6,6 +6,7 @@
     <title>RAS Running App</title>
     <style>
         body {
+            padding: 0;
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: #000;
@@ -23,22 +24,45 @@
             padding-top: 5rem;
             font-size: 2rem;
             font-weight: bold;
-            color: #ff4c4c;
-            margin-bottom: 20px;
+            color: #ff4a4a;
+            padding-bottom: 2rem;
+            /*margin-bottom: 20px;*/
         }
         .main-button {
             background-color: #ff4c4c;
             border: none;
             border-radius: 10px;
-            padding: 20px 40px;
+            padding: 1.3rem 2rem;
             font-size: 1.5rem;
             font-weight: bold;
             color: #fff;
             cursor: pointer;
-            margin-bottom: 30px;
+            margin-bottom: 1rem;
         }
         .main-button:hover {
             background-color: #ff1c1c;
+        }
+        .feed-button {
+            background-color: #666;
+            /*background-color: #a4ffa4;*/
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        .feed-button:hover {
+            background-color: #333;
+            /*background-color: #528f41;*/
+        }
+        .run_menu {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            justify-content: space-between;
         }
         .menu {
             display: flex;
@@ -62,6 +86,11 @@
         }
     </style>
     <script>
+        async function feedback(event) {
+            event.preventDefault();
+            const fbUrl = new URL(`/ras_db/feedback?userid={{user_id}}`, window.location.origin);
+            window.location.href = fbUrl
+        }
         async function startRunning(event) {
             // alert('Starting running...');
             event.preventDefault();
@@ -74,7 +103,7 @@
 
             const data = await response.json()
             if (data.result) {
-                alert("달리기가 시작되었습니다. ~^0^~");
+                // alert("달리기가 시작되었습니다. ~^0^~");
                 const videoUrl = new URL(`/ras_db/streaming/{{user_id}}`, window.location.origin);
                 window.location.href = videoUrl
             }
@@ -83,18 +112,6 @@
             event.preventDefault();
             const videoUrl = new URL(`/ras_db/{{user_id}}/profile`, window.location.origin);
             window.location.href = videoUrl
-            // const response = await fetch(`/ras_db/{{user_id}}/profile`, {
-            //     method: 'GET',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            // });
-            // console.log(response)
-            // const data = await response.json()
-            // if (data.result) {
-            //     const videoUrl = new URL(`/ras_db/{{user_id}}/profile`, window.location.origin);
-            //     window.location.href = videoUrl
-            // }
         }
         function viewPreviousRuns(event) {
             event.preventDefault();
@@ -108,15 +125,19 @@
 <body>
     <div class="container">
         {% if user_id %}
-            <div class="header">{{ user_id.upper }} <br><br> ARE YOU READY? </div>
+            <div class="header">{{ user_id.upper }} <br> ARE YOU READY? </div>
         {% else %}
             <div class="header">ARE YOU READY? </div>
         {% endif %}
-        <button class="main-button" onclick="startRunning(event)">Start Running</button>
+        <div class="run_menu">
+            <button class="main-button" onclick="startRunning(event)">Start Running</button>
+            <button class="feed-button" onclick="feedback(event)">피드백 설명</button>
+        </div>
         <div class="menu">
             <button class="menu-button" onclick="viewProfile(event)">마이페이지</button>
-            <button class="menu-button" onclick="viewPreviousRuns(event)">Running Log</button>
+            <button class="menu-button" onclick="viewPreviousRuns(event)">달리기 기록</button>
         </div>
     </div>
 </body>
 </html>
+

@@ -26,6 +26,7 @@
 		.login-logo {
 			padding-top: 5rem;
             font-size: 4rem;
+            font-weight: bold;
             color: #ff4a4a;
             margin-bottom: 2rem;
         }
@@ -51,30 +52,40 @@
         }
     </style>
     <script>
-        window.addEventListener('DOMContentLoaded', function() {
-            const url = window.location.href;
-            const new_url = url.split('streaming')[0] + 'imgstreaming' + url.split('streaming')[1];
-            console.log(new_url);
-            document.getElementById("video").src = new_url;
+        $(document).ready(function() {
+            window.addEventListener('DOMContentLoaded', function () {
+                const url = window.location.href;
+                const new_url = url.split('streaming')[0] + 'imgstreaming' + url.split('streaming')[1];
+                console.log(new_url);
+                document.getElementById("video").src = new_url;
+            });
         });
 
         async function endRunning(event) {
+
             event.preventDefault();
             const response = await fetch(`/ras_db/{{user_id}}/running`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    // TODO: 달리기 정보들
-                })
             });
 
             const data = await response.json();
             if (data.result) {
                 alert("달리기가 끝났습니다. ~^0^~");
-                const run_id = data.running_id;
-                const videoInfoUrl = new URL(`/ras_db/{{user_id}}/running/info/${run_id}`, window.location.origin);
+                const run_id = `{{running_id}}`;
+                console.log(run_id)
+                // NOTE: SAVE running info
+                const response = fetch(`/ras_db/{{user_id}}/running/save/{{running_id}}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                window.location.href = new URL(`/ras_db/{{user_id}}/running/save/{{running_id}}`, window.location.origin)
+                // const videoInfoUrl = new URL(`/ras_db/{{user_id}}/running/info/${run_id}`, window.location.origin);
                 window.location.href = videoInfoUrl;
             }
         }
@@ -84,11 +95,14 @@
     <div class="container">
 		<div class="login-logo">RAS</div>
         <div>
-            <img id="video" src="http://192.168.35.118:8080/ras_db/imgstreaming/{{ user_id }}" width="auto" height="auto">
+            <img id="video" src="http://192.168.35.196:8080/ras_db/imgstreaming/{{ user_id }}" width="auto" height="auto">
         </div>
         <div>
             <button class="main-button" onclick="endRunning(event)">End Running</button>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.5/sweetalert2.all.min.js"></script>
 </body>
 </html>
+{% load sweetify %}
+{% sweetify %}

@@ -19,14 +19,27 @@
         }
         .container {
             /*max-width: 800px;*/
-            padding: 2rem;
+            /*padding: 2rem;*/
             text-align: center;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
+        .back-button {
+            width: 100%;
+            text-align: left;
+        }
+        .go-back {
+            border: none;
+            outline: none;
+            background-color: inherit ;
+            cursor: pointer;
+            font-size: 3rem;
+            color: #fff;
+        }
         .logo {
             font-size: 4rem;
-            margin-bottom: 1rem;
+            font-weight: bold;
+            padding-bottom: 1rem;
         }
         .subheader {
             font-size: 2rem;
@@ -43,6 +56,7 @@
         }
         .feedback-type {
             font-size: 1.5rem;
+            font-weight: bold;
             color: #ff4a4a;
             text-align: left;
             margin-bottom: 0.5rem;
@@ -69,28 +83,23 @@
         .list-item a:hover {
             text-decoration: underline;
         }
-        @media (max-width: 600px) {
-            .container {
-                width: 90%;
-                padding: 1rem;
-            }
-            .logo {
-                font-size: 3rem;
-            }
-            .subheader {
-                font-size: 1.5rem;
-            }
-            .feedback-type {
-                font-size: 1.2rem;
-            }
-            .list-item {
-                font-size: 1rem;
-            }
-        }
     </style>
+    <script>
+        async function goBack(event) {
+            event.preventDefault();
+            const urlstr = window.location.href;
+            const url = new URL(urlstr);
+            const urlParams = url.searchParams;
+            const user = urlParams.get('userid')
+            const backUrl = new URL(`/ras_db/${user}/running/main`, window.location.origin);
+            window.location.href = backUrl
+        }
+    </script>
 </head>
 <body>
     <div class="container">
+        <div class="back-button"><button class="go-back" onclick="goBack(event)">↩</button></div>
+
         <div class="logo">RAS</div>
         <div class="subheader">- feedback Info -</div>
 
@@ -100,7 +109,9 @@
                     <h2 class="feedback-type">{{ type }}</h2>
                     <ol class="note">
                         {% for feedback in feedback_list %}
-                            <li class="list-item" style="color:#ff4a4a">▶  <a href="{% url 'feedback_detail' feedback.0 %}">{{ feedback.1 }}</a></li>
+                            <li class="list-item" style="color:#ff4a4a">▶
+                                <a href="{% url 'feedback_detail' feedback.0 %}?userid={{request.GET.userid}}">{{ feedback.1 }}</a>
+                            </li>
                         {% endfor %}
                     </ol>
                 </div>

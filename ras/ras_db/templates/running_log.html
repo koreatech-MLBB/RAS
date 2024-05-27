@@ -15,17 +15,25 @@
             justify-content: flex-start;
             align-items: center;
             height: 100vh;
-            padding: 20px;
+            /*padding: 20px;*/
         }
         .container {
             width: 100%;
             max-width: 600px;
         }
+        .go-back {
+            border: none;
+            outline: none;
+            background-color: inherit ;
+            cursor: pointer;
+            font-size: 3rem;
+            color: #fff;
+        }
         .header {
-            padding-top: 5rem;
+            padding-top: 1rem;
             font-size: 4rem;
             font-weight: bold;
-            color: #ff4c4c;
+            color: #ff4a4a;
             margin-bottom: 20px;
             text-align: center;
         }
@@ -92,9 +100,18 @@
         /*    }*/
         /*}*/
     </style>
+    <script>
+        async function goBack(event) {
+            event.preventDefault();
+            const backUrl = new URL(`/ras_db/{{user}}/running/main`, window.location.origin);
+            window.location.href = backUrl
+        }
+    </script>
 </head>
 <body>
     <div class="container">
+        <div class="back-button"><button class="go-back" onclick="goBack(event)">↩</button></div>
+
         <div class="header">RAS</div>
         <div class="greeting">hello! {{user}}</div>
 <!--        <div class="goal">오늘의 목표 | 3시간 뛰기!</div>-->
@@ -116,19 +133,23 @@
                 <tbody>
                 {% for week in each_month %}
                 <tr>
-                    {% for day, time, level in week %}
+
+                    {% for run_id, day, time, level in week %}
                         <td class="calendar_day"
+                            {% if run_id != 0 %}
+                                onClick="location.href='/ras_db/{{user}}/running/info/{{run_id}}'"
+                            {% endif %}
                             {% if level == 5 %} style="background-color: #ff4a4a; color:#fff"
                             {% elif level == 4 %} style="background-color: #ff7a7a;"
                             {% elif level == 3 %} style="background-color: #ff9999;"
                             {% elif level == 2 %} style="background-color: #ffb8b8;"
                             {% elif level == 1 %} style="background-color: #fff;"
                             {% endif %}>
-                             <!--#ffd7d7-->
-                        {% if day %}
-                            <div class="date">{{ day }}일</div><br>
-                            <div class="time">{{ time }}</div>
-                        {% endif %}
+
+                            {% if day %}
+                                <div class="date">{{ day }}일</div><br>
+                                <div class="time">{{ time }}</div>
+                            {% endif %}
                         </td>
                     {% endfor %}
                 </tr>

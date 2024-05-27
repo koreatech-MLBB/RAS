@@ -11,7 +11,7 @@
             var audioElement = document.getElementById('audioPlayer');
 
             function fetchNextAudio() {
-                fetch("{% url 'get_next_audio' %}")
+                fetch("{% url 'get_next_audio' user_id %}")
                     .then(response => response.json())
                     .then(data => {
                         if (data.next_audio && data.next_audio !== 'None') {
