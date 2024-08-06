@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, minimum-scale=0.1">
@@ -15,27 +16,31 @@
             /*align-items: center;*/
             height: 100vh;
         }
+
         .container {
             width: 100%;
             max-width: 100%;
             text-align: center;
-			vertical-align:middle;
+            vertical-align: middle;
             /*justify-content: center;*/
             color: #fff;
         }
-		.login-logo {
-			padding-top: 5rem;
+
+        .login-logo {
+            padding-top: 5rem;
             font-size: 4rem;
             font-weight: bold;
             color: #ff4a4a;
             margin-bottom: 2rem;
         }
+
         #video {
             max-width: 100%;
             height: auto;
             -webkit-user-select: none;
             background-color: hsl(0, 0%, 25%);
         }
+
         .main-button {
             background-color: #ff4c4c;
             border: none;
@@ -47,22 +52,40 @@
             cursor: pointer;
             margin-top: 20px;
         }
+
         .main-button:hover {
             background-color: #ff1c1c;
         }
     </style>
     <script>
-        $(document).ready(function() {
-            window.addEventListener('DOMContentLoaded', function () {
-                const url = window.location.href;
-                const new_url = url.split('streaming')[0] + 'imgstreaming' + url.split('streaming')[1];
-                console.log(new_url);
-                document.getElementById("video").src = new_url;
+        document.addEventListener('DOMContentLoaded', function () {
+            var audioElement = document.getElementById('audioPlayer');
+            const url = window.location.href;
+            const new_url = url.split('streaming')[0] + 'imgstreaming' + url.split('streaming')[1];
+            console.log(new_url);
+            document.getElementById("video").src = new_url;
+
+            function fetchNextAudio() {
+                fetch("{% url 'get_next_audio' user_id %}")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.next_audio && data.next_audio !== '-1') {
+                            audioElement.src = "{% static '' %}" + data.next_audio;
+                            audioElement.load();
+                            audioElement.play();
+                        } else {
+                            setTimeout(fetchNextAudio, 1000);
+                        }
+                    })
+                    .catch(error => console.error('Error fetching next audio:', error));
+            }
+
+            audioElement.addEventListener('ended', function () {
+                fetchNextAudio();
             });
         });
 
         async function endRunning(event) {
-
             event.preventDefault();
             const response = await fetch(`/ras_db/{{user_id}}/running`, {
                 method: 'POST',
@@ -73,35 +96,44 @@
 
             const data = await response.json();
             if (data.result) {
-                alert("달리기가 끝났습니다. ~^0^~");
+                // alert("달리기가 끝났습니다. ~^0^~");
                 const run_id = `{{running_id}}`;
-                console.log(run_id)
+                console.log(run_id);
                 // NOTE: SAVE running info
-                const response = fetch(`/ras_db/{{user_id}}/running/save/{{running_id}}`, {
+                const saveResponse = await fetch(`/ras_db/{{user_id}}/running/save/{{running_id}}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                 });
 
-                window.location.href = new URL(`/ras_db/{{user_id}}/running/save/{{running_id}}`, window.location.origin)
+                window.location.href = new URL(`/ras_db/{{user_id}}/running/save/{{running_id}}`, window.location.origin);
                 // const videoInfoUrl = new URL(`/ras_db/{{user_id}}/running/info/${run_id}`, window.location.origin);
-                window.location.href = videoInfoUrl;
+                // window.location.href = videoInfoUrl;
             }
         }
+
     </script>
 </head>
 <body>
-    <div class="container">
-		<div class="login-logo">RAS</div>
-        <div>
-            <img id="video" src="http://192.168.35.196:8080/ras_db/imgstreaming/{{ user_id }}" width="auto" height="auto">
-        </div>
-        <div>
-            <button class="main-button" onclick="endRunning(event)">End Running</button>
-        </div>
+<div class="container">
+    <div class="login-logo">RAS</div>
+    <div>
+        <img style="border-radius: 10px" id="video" src="http://192.168.35.97:8080/ras_db/imgstreaming/{{ user_id }}"
+             width="auto" height="auto">
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.5/sweetalert2.all.min.js"></script>
+    <div>
+        <button class="main-button" onclick="endRunning(event)">End Running</button>
+    </div>
+    <div>
+        <audio id="audioPlayer" autoplay>
+            <source src="{% static 'audio/start_running.mp3' %}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+</div>
+{#    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.5/sweetalert2.all.min.js"></script>#}
 </body>
 </html>
 {% load sweetify %}

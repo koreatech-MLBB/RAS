@@ -121,7 +121,13 @@
         .value-feed {
             font-size: 1.5rem;
             text-align: left;
-            padding: 5rem;
+            padding: 1rem;
+        }
+        .running-value {
+            width:auto;
+            font-size: 1.2rem;
+            text-align: left;
+            padding: 1rem 0.5rem;
         }
         .heart-rate {
             position: relative;
@@ -129,10 +135,10 @@
         .heart-rate:before {
             content: '♥';
             position: absolute;
-            top: -25%;
+            top: -65%;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #ff4c4c;
         }
         .detail {
@@ -144,7 +150,7 @@
         video {
             max-width: 100%;
             height: auto;
-            -webkit-user-select: none;
+            {#-webkit-user-select: none;#}
             border-radius: 10px;
         }
     </style>
@@ -172,40 +178,41 @@
                 <div class="label">심박수</div>
                 <div class="value heart-rate">{{ heart_rate }} bpm</div>
             </div>
-            <div class="running-align">
-                <div class="running-inner-item" style="margin-bottom: 0.5rem;">
+{#            <div class="running-align">#}
+                <div class="running-item" style="margin-bottom: 0.5rem;">
                     <div class="label">스텝 수</div>
-                    <div class="value">{{ steps }}</div>
+                    <div class="value">{{ steps }} 걸음</div>
                 </div>
-                <div class="running-inner-item" style="margin-top: 0.5rem; ">
+                <div class="running-item" style="margin-top: 0.5rem; ">
                     <div class="label">종합 점수</div>
                     <div class="value-feed">
-                        발목 점수 : 54 | 65 <br>
-                        무릎 점수 : 78 | 89 <br>
-                        골반 점수 : 45 | 23 <br>
-                        시선 점수 : 100 <br>
-                        팔꿈치 점수 : 89 <br>
-                        상체 점수 : 100
+                        <b>발목 점수</b> : {{ left_ankle_score }} | {{ right_ankle_score }} <br>
+                        <b>무릎 점수</b> : {{ left_knee_score }} | {{ right_knee_score }} <br>
+                        <b>골반 점수</b> : {{ left_hip_score }} | {{ right_hip_score }} <br>
+                        <b>시선 점수</b> : {{ gaze_score }} <br>
+                        <b>상체 점수</b> : {{ upper_body_score }} <br>
+                        <b>팔꿈치 점수</b> : {{ elbow_score }} <br><br>
+                        <b>최종 점수</b> : {{ total_score }}
                     </div>
                 </div>
-            </div>
+{#            </div>#}
             <div class="video-item">
                 <div class="label">러닝 자세</div>
                 <div class="detail">GOOD</div>
 
-                <video autoplay="autoplay" muted="muted" loop="loop">
-                    <source src="{% static 'media/videos/run_example_3.mp4' %}" type="video/mp4">
+                <video autoplay playsinline muted loop>
+                    <source src="{% get_static_prefix %}{{ best_pose }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
-<!--                <div><img id="video" src="{% static '/media/videos/run_example_3.mp4' %}" width="auto" height="auto"></div>-->
-                <!--<img src="{% static 'good_running.png' %}" alt="Running Detail" width="auto" height="auto">-->
             </div>
             <div class="running-item">
                 <div class="label">피드백 요약</div>
-                <div class="value">
-                    오른발 지지시 발목을 위로 조금 더 접어주세요.<br>
-                    왼발 전진시 허벅다리를 조금 더 높게 들어주세요.<br>
-                    팔꿈치를 직각보다 작게 유지해주세요.<br>
+                <div class="running-value">
+                    {% for feedback in feedbacks %}
+                        <div style="display: flex">
+                        🚩<div>{{ feedback }}</div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -230,13 +237,13 @@
             </div>
             <div class="running-item">
                 <div class="label">러닝 자세</div>
-                <img src="{% static 'good_running.png' %}" alt="Running Detail">
+                <img src="{% static best_pose %}" alt="Running Detail">
                 <div class="detail">GOOD</div>
             </div>
         </div>
     </div>
     {% endif %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.5/sweetalert2.all.min.js"></script>
+{#    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.5/sweetalert2.all.min.js"></script>#}
 </body>
 </html>
 {% load sweetify %}

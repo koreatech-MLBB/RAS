@@ -76,7 +76,7 @@
             /*margin: 0.5rem 0;*/
         }
         .list-item a {
-            font-size: 1.1rem;
+            font-size: 1rem;
             text-decoration: none;
             color: #ccc;
         }
@@ -109,8 +109,10 @@
                     <h2 class="feedback-type">{{ type }}</h2>
                     <ol class="note">
                         {% for feedback in feedback_list %}
-                            <li class="list-item" style="color:#ff4a4a">▶
-                                <a href="{% url 'feedback_detail' feedback.0 %}?userid={{request.GET.userid}}">{{ feedback.1 }}</a>
+                            <li class="list-item" style="color:#ff4a4a">
+                            <div style="display: flex">
+                                <div style="padding-right: 0.5rem">▶</div><div><a href="{% url 'feedback_detail' feedback.0 %}?userid={{request.GET.userid}}">{{ feedback.1 }}</a></div>
+                            </div>
                             </li>
                         {% endfor %}
                     </ol>

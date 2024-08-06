@@ -95,7 +95,7 @@ class SignInView(APIView):
         return render(request, 'login.html')
 
     def post(self, request):
-        print(request)
+        # # print(request)
         data = json.loads(request.body.decode('utf-8'))
         user = authenticate(username=data['user_id'], password=data['password'])
         if user is not None:
@@ -124,7 +124,7 @@ class ProfileView(APIView):
                 "height": myprofile.height,
                 "gender": 'Female' if myprofile.gender else 'Male'
             }
-        print("hi this is profile")
+        # # print("hi this is profile")
         return render(request, 'profile.html', context)
 
 
@@ -135,7 +135,7 @@ class RunningMainView(APIView):
         if user_ is not None:
             if 'HTTP_AUTHORIZATION' in request.META:
                 if request.META['HTTP_AUTHORIZATION'].split()[1] == Token.objects.get(user=user_).key:
-                    print(user_)
+                    # # print(user_)
                     return render(request, 'ready_to_run.html', {'user_id': user_id})
                 else:
                     return Response({"result": False, "error": "인증 되지 않은 토큰 입니다."})
@@ -202,20 +202,22 @@ def create_calendar(runnings):
 # 캘린더 러닝 데이터
 class RunningView(APIView):
     def get(self, request, user_id):
-        print("RunningView get")
+        # # print("RunningView get")
         user_ = User.objects.get(username=user_id)
         if user_ is not None:
-            runnings = (Running.objects.filter(user=user_)
-                        .values('running_id', 'running_date', 'start_time', 'end_time'))
+            # # print("user_: ", user_)
+            runnings = Running.objects.filter(user=user_).values('running_id', 'running_date', 'start_time', 'end_time')
 
-            print(runnings)
+            # print("running", runnings)
             result = create_calendar(runnings)
             return render(request, 'running_log.html', {"result": result, "user": user_})
+        return render(request, 'running_log.html')
 
     # 달리기 시작 버튼, 종료 버튼
     def post(self, request, user_id):
-        print("RunningView get")
+        # print("RunningView get")
         user_ = User.objects.get(username=user_id)
+        # print("user_: ", user_)
         if user_ is not None:
             if request.META['HTTP_AUTHORIZATION'].split()[1] == Token.objects.get(user=user_).key:
                 try:
@@ -225,6 +227,7 @@ class RunningView(APIView):
                 # 멈춤
                 if state is not None:
                     state.delete()
+                    # print("hihi")
                     return Response({"result": True, "state": False})
                 else:
                     new_state = RunningState(user=user_, username=user_id, state=True)
@@ -243,32 +246,72 @@ class RunningSaveView(APIView):
         response = Response({"message": "csft"})
 
         user_ = User.objects.get(username=user_id)
+        print("user name :", user_id)
+        print("user id :", user_.id)
         my_csrf_token = Token.objects.get(user=user_.id).key
         response['X-CSRF-Token'] = csrf_token
         response['myToken'] = my_csrf_token
 
-        print("===========token==========")
-        print(csrf_token)
-        print(my_csrf_token)
-        print("==========================")
+        print("tokens : ", csrf_token, " \n          ", my_csrf_token)
+
+        # print("===========token==========")
+        # print(csrf_token)
+        # print(my_csrf_token)
+        # print("==========================")
         response.set_cookie(key='authToken', value=my_csrf_token)
         return response
 
     def post(self, request, user_id, running_id):
-        print("RunningSaveView post")
-
+        # print("RunningSaveView post")
+        time.sleep(1)
         data = json.loads(request.body.decode('utf-8'))
+        # print(data)
         user_ = User.objects.get(username=user_id)
 
         if user_ is not None:
-            print(request.META['HTTP_AUTHORIZATION'].split(',')[0])
-            print(Token.objects.get(user=user_).key)
+            # print(request.META['HTTP_AUTHORIZATION'].split(',')[0])
+            # print(Token.objects.get(user=user_).key)
             if request.META['HTTP_AUTHORIZATION'].split()[1] == Token.objects.get(user=user_).key \
                     or request.META['HTTP_AUTHORIZATION'].split(',')[0] == Token.objects.get(user=user_).key:
                 now_running = Running.objects.get(running_id=running_id)
-                now_running.end_time = datetime.now()
-                now_running.heart_rate = int(data)
-                now_running.save()
+                while True:
+                    try:
+                        scores = shared_memory.SharedMemory(name=f"running_{user_id}_info")
+                        user_scores = np.ndarray(shape=(11,), dtype=np.float64, buffer=scores.buf)
+                        print("user_scores", user_scores)
+                        now_running.right_ankle_score = user_scores[0]
+                        now_running.left_ankle_score = user_scores[1]
+                        now_running.right_knee_score = user_scores[2]
+                        now_running.left_knee_score = user_scores[3]
+                        now_running.right_hip_score = user_scores[4]
+                        now_running.left_hip_score = user_scores[5]
+                        now_running.gaze_score = user_scores[6]
+                        now_running.elbow_score = user_scores[7]
+                        now_running.upper_body_score = user_scores[8]
+                        now_running.total_score = user_scores[9]
+                        now_running.steps = user_scores[10]
+                        now_running.end_time = datetime.now()
+                        now_running.heart_rate = int(data)
+
+                        feedbacks = shared_memory.SharedMemory(name=f"running_{user_id}_feed_cnt")
+                        user_feedbacks = np.ndarray(shape=(3,), dtype=np.int32, buffer=feedbacks.buf)
+                        feedback_ids = ','.join([str(_id) for _id in user_feedbacks])
+                        now_running.feedbacks = feedback_ids
+
+                        now_running.save()
+
+                        scores.close()
+                        feedbacks.close()
+
+                        break
+
+                    except FileNotFoundError as e:
+                        # print("File is not found (line 304)")
+                        # print(e)
+                        raise e
+                        # # print("running save view", e)
+                        time.sleep(0.1)
+                        continue
 
         return Response({"result": True}, status=200)
 
@@ -276,11 +319,12 @@ class RunningSaveView(APIView):
 # 러닝 데이터 전부 불러오기
 class RunningInfoView(APIView):
     def get(self, request, user_id, running_id):
-        print("RunningInfoView get")
+        # print("RunningInfoView get")
 
         user_ = User.objects.get(username=user_id)
         if user_ is not None:
             if request.META['HTTP_AUTHORIZATION'].split()[1] == Token.objects.get(user=user_).key:
+
                 running_info = Running.objects.get(running_id=running_id)
 
                 context = {}
@@ -294,12 +338,32 @@ class RunningInfoView(APIView):
 
                     elapsed_time = f"{h:02}:{m:02}:{s:02}"
 
+                    feedbacks = running_info.feedbacks
+                    feedbacks = feedbacks.split(',')
+
+                    feedbacks_name = []
+                    for i in range(3):
+                        if int(feedbacks[i]) > 0:
+                            feedbacks_name.append(Feedback.objects.get(id=int(feedbacks[i])).name)
+                    # print(f"media/best_pose/{user_id}/{running_info.running_date}/best_pose.mp4")
                     context = {
                         'user': user_,
                         'running_date': running_info.running_date,
                         'running_time': elapsed_time,
                         'heart_rate': running_info.heart_rate,
-                        'steps': running_info.steps
+                        'steps': running_info.steps,
+                        'right_ankle_score': running_info.right_ankle_score,
+                        'left_ankle_score': running_info.left_ankle_score,
+                        'right_knee_score': running_info.right_knee_score,
+                        'left_knee_score': running_info.left_knee_score,
+                        'right_hip_score': running_info.right_hip_score,
+                        'left_hip_score': running_info.left_hip_score,
+                        'gaze_score': running_info.gaze_score,
+                        'elbow_score': running_info.elbow_score,
+                        'upper_body_score': running_info.upper_body_score,
+                        'total_score': running_info.total_score,
+                        'feedbacks': feedbacks_name,
+                        'best_pose': f"media/best_pose/{user_id}/{running_info.running_date}/best_pose.mp4"
                     }
                 # FIXME: 여기 수정!!!!!!
                 sweetify.success(request, "달리기가 저장되었습니다.")
@@ -354,22 +418,25 @@ class FeedbackDetailView(APIView):
 
 def video_stream(user_id):
 
-    time.sleep(0.3)
-
+    cnt = 0
     while True:
         # 공유 메모리 열기
         try:
-            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}")
-        except BaseException:
+            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}_frame")
+        except FileNotFoundError as e:
             # print(e)
-            # break
+            cnt += 1
+            time.sleep(0.1)
+            # print(cnt)
+            if cnt >= 30:
+                break
             continue
 
         # 공유 메모리에서 데이터를 NumPy 배열로 읽기
         shm_array = np.ndarray((480, 640, 3), dtype=np.uint8, buffer=my_shm.buf)
         # NumPy 배열을 이미지로 변환
         image = np.reshape(shm_array, (480, 640, 3))  # 예시 이미지 크기 (높이, 너비, 채널)
-      
+
         # JPEG 인코딩
         success, jpeg = cv2.imencode(".jpg", image)
         # 공유 메모리 닫기
@@ -386,17 +453,21 @@ def audio_view(request):
 
 
 def get_next_audio(request, user_id):
-    # 오디오 파일 목록
-    audio_files = [
-        'audio/audio1.mp3',
-        'audio/audio2.mp3',
-        'audio/audio3.mp3',
-        'None'
-    ]
-    # 랜덤하게 오디오 파일 선택
-    next_audio = random.choice(audio_files)
-    return JsonResponse({'next_audio': next_audio})
+    while True:
+        # 공유 메모리 열기
+        try:
+            my_shm = shared_memory.SharedMemory(name=f"running_{user_id}_feedback")
+            # 공유 메모리에서 데이터를 NumPy 배열로 읽기
+            shm_array = np.ndarray((1,), dtype=np.uint8, buffer=my_shm.buf)
 
+            next_audio = shm_array[0] #''.join([_id for _id in shm_array.tolist()])
+            if next_audio != 255:
+                next_audio = str(Feedback.objects.get(id=next_audio).video_path)
+            return JsonResponse({'next_audio': next_audio})
+        except BaseException as e:
+            # print(e)
+            time.sleep(0.1)
+            continue
 
 
 class AudioStreamingView(APIView):
@@ -407,13 +478,13 @@ class AudioStreamingView(APIView):
 
 class StreamingView(APIView):
     def get(self, request, user_id):
-        print("StreamingView get")
+        # print("StreamingView get")
         return StreamingHttpResponse(video_stream(user_id), content_type="multipart/x-mixed-replace; boundary=frame")
 
 
 class StreamingRunning(APIView):
     def get(self, request, user_id):
-        print("StreamingRunning get")
+        # print("StreamingRunning get")
         # 원하는 컨텍스트 데이터 설정
         user_ = User.objects.get(username=user_id)
         new_running = Running(
@@ -433,6 +504,6 @@ class StreamingRunning(APIView):
         # 템플릿을 렌더링하여 HTML 생성
         sweetify.sweetalert(request,
                             '달리기가 시작되었습니다~!', timer=1000)
-                            # persistent='RUN!')
+        # persistent='RUN!')
         # sweetify.success(request, '달리기가 시작되었습니다.')
         return render(request, 'streaming.html', context)

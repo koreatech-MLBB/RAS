@@ -28,6 +28,19 @@ class Running(models.Model):
     end_time = models.DateTimeField()
     heart_rate = models.IntegerField()
     steps = models.IntegerField()
+    # 점수
+    right_ankle_score = models.FloatField(null=True, blank=True)
+    left_ankle_score = models.FloatField(null=True, blank=True)
+    right_knee_score = models.FloatField(null=True, blank=True)
+    left_knee_score = models.FloatField(null=True, blank=True)
+    right_hip_score = models.FloatField(null=True, blank=True)
+    left_hip_score = models.FloatField(null=True, blank=True)
+    gaze_score = models.FloatField(null=True, blank=True)
+    elbow_score = models.FloatField(null=True, blank=True)
+    upper_body_score = models.FloatField(null=True, blank=True)
+    total_score = models.FloatField(null=True, blank=True)
+    # 피드백
+    feedbacks = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         managed = True

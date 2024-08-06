@@ -26,8 +26,12 @@ SECRET_KEY = 'django-insecure-48tchp&q%i^l7vq0hdn2@+naok_gupw-hl(ubes$1g4383iw2-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["192.168.56.21", "192.168.35.34", "192.168.35.148", "172.19.82.188", "192.168.153.65",
-                 "192.168.35.118", "192.168.0.60", "192.168.35.196", "172.19.82.7"]
+ALLOWED_HOSTS = ["192.168.35.97"]
+
+'''
+"192.168.56.21", "192.168.35.34", "192.168.35.148", "172.19.82.188", "192.168.153.65",
+                 "192.168.35.118", "192.168.0.60", "192.168.35.196", "172.19.82.7", "192.168.35.80", 
+                 '''
 
 
 # Application definition
@@ -94,7 +98,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ras',
         'USER': 'root',
-        'PASSWORD': '1212',
+        'PASSWORD': '1234',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -135,7 +139,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 
 # MEDIA_URL = "/media/"
@@ -143,7 +147,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'ras_db', 'static'),
-    os.path.join(BASE_DIR, 'ras_db', 'media'),
 ]
 
 # Default primary key field type

@@ -83,6 +83,7 @@
     <script>
         function logout() {
             const loginUrl = new URL(`/ras_db/sign/in`, window.location.origin);
+            document.cookie = "max-age=0"
             window.location.href = loginUrl
         }
 
